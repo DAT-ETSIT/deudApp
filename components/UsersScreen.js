@@ -1,16 +1,15 @@
 // components/UsersScreen.js
 
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, View, TextInput, Button, TouchableOpacity, Text } from 'react-native';
-import * as SQLite from 'expo-sqlite';
+import { StyleSheet, View, TextInput, Button, TouchableOpacity, Text, ImageBackground } from 'react-native';
 import { useDB } from '../DBContext';
 import { useFocusEffect } from '@react-navigation/native';
+import backgroundImage from '../assets/background.png';
 
 export default function UsersScreen(props) {
   const db = useDB();
   const [isLoading, setIsLoading] = useState(true);
   const [names, setNames] = useState([]);
-  const [currentName, setCurrentName] = useState('');
 
   useEffect(() => {
     db.transaction(tx => {
@@ -28,16 +27,6 @@ export default function UsersScreen(props) {
     }, [])
   );
 
-
-  const addName = () => {
-    db.transaction(tx => {
-      tx.executeSql('INSERT INTO users (name) values (?)', [currentName], () => {
-        setNames([...names, { name: currentName }]);
-        setCurrentName('');
-      });
-    });
-  }
-
   const showNames = () => {
     return names.map((name, index) => {
       return (
@@ -49,19 +38,21 @@ export default function UsersScreen(props) {
   };
 
   return (
-    <View style={styles.container}>
-      <Button title="Agregar Usuario" onPress={() => props.navigation.navigate('AddUser')} />
-      {showNames()}
-    </View>
+    <ImageBackground source={require('../assets/background.png')} style={styles.background}>
+      <View style={styles.container}>
+        {showNames()}
+        <Button title="GESTIÓN USUARIO" onPress={() => props.navigation.navigate('AddUser')} />
+      </View>
+    </ImageBackground>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
     alignItems: 'center',
     justifyContent: 'center',
+    width: '90%'
   },
   button: {
     backgroundColor: '#4CAF50',
@@ -74,5 +65,11 @@ const styles = StyleSheet.create({
   buttonText: {
     color: 'white',
     fontSize: 18,
+  },
+  background: {
+    flex: 1,
+    resizeMode: 'cover',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });

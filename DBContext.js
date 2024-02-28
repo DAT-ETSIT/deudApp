@@ -1,7 +1,7 @@
 import React, { createContext, useContext } from 'react';
 import * as SQLite from 'expo-sqlite';
 
-const db = SQLite.openDatabase('final.db');
+const db = SQLite.openDatabase('gg.db');
 
 const DBContext = createContext();
 
