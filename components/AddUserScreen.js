@@ -3,17 +3,18 @@
 import React, { useState } from 'react';
 import { StyleSheet, View, TextInput, Button } from 'react-native';
 import * as SQLite from 'expo-sqlite';
+import { useDB } from '../DBContext';
 
-const db = SQLite.openDatabase('perico.db');
 
-export default function AddUserScreen({ navigation }) {
+export default function AddUserScreen(props) {
+  const db = useDB();
   const [currentName, setCurrentName] = useState('');
 
   const addName = () => {
     db.transaction(tx => {
       tx.executeSql('INSERT INTO users (name) values (?)', [currentName]);
     });
-    navigation.goBack();
+    props.navigation.goBack();
   }
 
   return (

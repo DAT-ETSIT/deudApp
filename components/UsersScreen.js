@@ -3,10 +3,11 @@
 import React, { useState, useEffect } from 'react';
 import { StyleSheet, View, TextInput, Button, TouchableOpacity, Text } from 'react-native';
 import * as SQLite from 'expo-sqlite';
+import { useDB } from '../DBContext';
+import { useFocusEffect } from '@react-navigation/native';
 
-const db = SQLite.openDatabase('perico.db');
-
-export default function UsersScreen({ navigation }) {
+export default function UsersScreen(props) {
+  const db = useDB();
   const [isLoading, setIsLoading] = useState(true);
   const [names, setNames] = useState([]);
   const [currentName, setCurrentName] = useState('');
@@ -18,6 +19,15 @@ export default function UsersScreen({ navigation }) {
     });
     setIsLoading(false);
   }, []);
+
+  useFocusEffect(
+    React.useCallback(() => {
+      db.transaction(tx => {
+        tx.executeSql('SELECT * FROM users', null, (_, resultSet) => setNames(resultSet.rows._array));
+      });
+    }, [])
+  );
+
 
   const addName = () => {
     db.transaction(tx => {
@@ -40,7 +50,7 @@ export default function UsersScreen({ navigation }) {
 
   return (
     <View style={styles.container}>
-      <Button title="Agregar Usuario" onPress={() => navigation.navigate('AddUser')} />
+      <Button title="Agregar Usuario" onPress={() => props.navigation.navigate('AddUser')} />
       {showNames()}
     </View>
   );
