@@ -1,12 +1,9 @@
-// components/AddUserScreen.js
-
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, View, TextInput, Button, TouchableOpacity, Text, Alert } from 'react-native';
+import { StyleSheet, View, TextInput, Button, Text, Alert, ScrollView, ImageBackground } from 'react-native';
 import { useDB } from '../DBContext';
-import { useFocusEffect } from '@react-navigation/native';
+import backgroundImage from '../assets/background.png';
 
-
-export default function AddUserScreen(props) {
+export default function ManageUserScreen(props) {
   const db = useDB();
   const [currentName, setCurrentName] = useState('');
   const [names, setNames] = useState([]);
@@ -17,25 +14,28 @@ export default function AddUserScreen(props) {
     });
   }, []);
 
-
   const addName = () => {
+    if (!currentName.trim()) {
+      Alert.alert('Error', 'Por favor, completa todos los campos.');
+      return;
+    }
     db.transaction(tx => {
       tx.executeSql('INSERT INTO users (name) values (?)', [currentName],
         (txObj, resultSet) => {
           let existingNames = [...names];
-          existingNames.push({ id: resultSet.insertId, name: currentName});
+          existingNames.push({ id: resultSet.insertId, name: currentName });
           setNames(existingNames);
-          setCurrentName(undefined);
+          setCurrentName('');
         },
         (txObj, error) => console.log(error)
       );
     });
-  }
+  };
 
   const tryDeleteName = (id) => {
     Alert.alert(
       'Confirmación',
-      '¿Estás seguro de que deseas eliminar a esta pesona?',
+      '¿Estás seguro de que deseas eliminar a esta persona?',
       [
         { text: 'Cancelar', style: 'cancel' },
         { text: 'Eliminar', onPress: () => deleteName(id) }
@@ -58,6 +58,12 @@ export default function AddUserScreen(props) {
   };
 
   const updateName = (id) => {
+    if (!currentName.trim()) {
+      const nameToUpdate = names.find(name => name.id === id);
+      setCurrentName(nameToUpdate.name);
+      return;
+    }
+
     db.transaction(tx => {
       tx.executeSql('UPDATE users SET name = ? WHERE id = ?', [currentName, id],
         (txObj, resultSet) => {
@@ -66,7 +72,7 @@ export default function AddUserScreen(props) {
             const indexToUpdate = existingNames.findIndex(name => name.id === id);
             existingNames[indexToUpdate].name = currentName;
             setNames(existingNames);
-            setCurrentName(undefined);
+            setCurrentName('');
           }
         },
         (txObj, error) => console.log(error)
@@ -79,50 +85,76 @@ export default function AddUserScreen(props) {
       <View key={index} style={styles.row}>
         <Text style={styles.name}>{name.name}</Text>
         <View style={styles.buttonContainer}>
-          <Button title="Update" onPress={() => updateName(name.id)} style={styles.button} />
+          <Button title="Actualizar" onPress={() => updateName(name.id)} style={styles.button} />
           <View style={styles.buttonSpacer} />
-          <Button title="Delete" onPress={() => tryDeleteName(name.id)} style={styles.button} />
+          <Button title="Borrar" onPress={() => tryDeleteName(name.id)} style={styles.button} />
         </View>
       </View>
     ));
   };
 
   return (
-    <View style={styles.container}>
-      <TextInput
-        value={currentName}
-        placeholder="Nombre"
-        onChangeText={setCurrentName}
-        style={styles.input}
-      />
-      <Button title="Añadir Nombre" onPress={addName} />
-      {showNames()}
-    </View>
+    <ImageBackground source={backgroundImage} style={styles.background}>
+      <View style={styles.container}>
+        <View style={styles.inputRow}>
+          <TextInput
+            value={currentName}
+            placeholder="Nombre"
+            onChangeText={setCurrentName}
+            style={styles.input}
+          />
+          <Button title="Añadir Nombre" onPress={addName} style={styles.addButton} />
+        </View>
+        <ScrollView style={styles.table}>
+        <View style={styles.row}>
+            <Text style={styles.masterCell}>Usuarios</Text>    
+        </View> 
+          {showNames()}
+        </ScrollView>
+      </View>
+    </ImageBackground>
   );
-};
+}
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
     alignItems: 'center',
     justifyContent: 'center',
+    width: '90%',
+  },
+  inputRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    width: '80%',
+    marginTop: 20,
+    marginBottom: 10,
   },
   input: {
     borderWidth: 1,
     borderColor: 'gray',
     borderRadius: 5,
     padding: 8,
-    marginTop: 8,
-    marginBottom: 8,
-    width: '80%',
+    flex: 1,
+    marginRight: 10,
+  },
+  addButton: {
+    flex: 0.3,
+  },
+  table: {
+    width: '90%',
+    marginTop: 20,
+    marginBottom: 20,
   },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    width: '80%',
+    borderBottomWidth: 1,
+    borderColor: 'black',
     marginBottom: 8,
+    paddingBottom: 8,
   },
   name: {
     fontSize: 16,
@@ -136,5 +168,15 @@ const styles = StyleSheet.create({
   },
   buttonSpacer: {
     width: 8,
+  },
+  background: {
+    flex: 1,
+    resizeMode: 'cover',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  masterCell: {
+    fontSize: 24,
+    fontWeight: 'bold',
   },
 });
