@@ -15,6 +15,15 @@ export default function MainScreen(props) {
     db.transaction(tx => {
       tx.executeSql('CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT)');
       tx.executeSql('CREATE TABLE IF NOT EXISTS products (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, price DOUBLE)');
+      tx.executeSql('CREATE TABLE IF NOT EXISTS transactions (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER, product_id INTEGER, date TEXT, type TEXT, FOREIGN KEY(user_id) REFERENCES users(id), FOREIGN KEY(product_id) REFERENCES products(id))');
+      tx.executeSql('CREATE TABLE IF NOT EXISTS reset (id INTEGER PRIMARY KEY AUTOINCREMENT, date TEXT)');
+      tx.executeSql('SELECT * FROM reset', null, (_, resultSet) => {
+        if (resultSet.rows.length === 0) {
+          const currentDate = new Date().toISOString().replace(/\D/g, '');
+          console.log(currentDate)
+          tx.executeSql('INSERT INTO reset (date) VALUES (?)', [currentDate]);
+        }
+      });
       tx.executeSql('SELECT * FROM users', null, (_, resultSet) => setNames(resultSet.rows._array));
     });
     setIsLoading(false);
@@ -31,7 +40,8 @@ export default function MainScreen(props) {
   const showNames = () => {
     return names.map((name, index) => {
       return (
-        <TouchableOpacity key={index} style={styles.button}>
+        <TouchableOpacity key={index} style={styles.button}
+        onPress={() => props.navigation.navigate('Board',{name: name})} >
           <Text style={styles.buttonText}>{name.name}</Text>
         </TouchableOpacity>
       );

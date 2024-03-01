@@ -9,6 +9,7 @@ import MainScreen from './components/MainScreen';
 import ManageUserScreen from './components/ManageUserScreen';
 import ManageProductsScreen from './components/ManageProductsScreen';
 import DebtsScreen from './components/DebtsScreen';
+import BoardScreen from './components/BoardScreen';
 
 const Stack = createStackNavigator();
 
@@ -21,6 +22,7 @@ export default function App() {
             <Stack.Screen name="ManageUser" component={ManageUserScreen} options={{ title: 'Administración de usuarios' }} />
             <Stack.Screen name="ManageProducts" component={ManageProductsScreen} options={{ title: 'Administración de productos' }} />
             <Stack.Screen name="Debts" component={DebtsScreen} options={{ title: 'Deudas' }} />
+            <Stack.Screen name="Board" component={BoardScreen} options={{ title: 'Añadir Productos' }} />
           </Stack.Navigator>
           <StatusBar style="auto" />
         </NavigationContainer>
