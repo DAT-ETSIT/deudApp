@@ -1,7 +1,8 @@
 import React, { createContext, useContext } from 'react';
 import * as SQLite from 'expo-sqlite';
 
-const db = SQLite.openDatabase('pg.db');
+const DATABASE_NAME = 'deudat.db';
+const db = SQLite.openDatabase(DATABASE_NAME);
 
 const DBContext = createContext();
 
@@ -14,3 +15,5 @@ export const DBProvider = ({ children }) => {
     </DBContext.Provider>
   );
 };
+
+export {DATABASE_NAME}

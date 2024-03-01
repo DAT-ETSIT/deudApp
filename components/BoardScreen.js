@@ -28,8 +28,6 @@ export default function ManageProductsScreen(props) {
         (_, resetResultSet) => {
           if (resetResultSet.rows.length > 0) {
             const lastResetDate = resetResultSet.rows.item(0).date;
-            console.log(lastResetDate);
-            // Luego, realizamos la consulta para obtener el amount
             tx.executeSql(
               `SELECT product_id, 
                       SUM(CASE WHEN type = '+' THEN 1 ELSE 0 END) - 
@@ -48,7 +46,6 @@ export default function ManageProductsScreen(props) {
     });
   }, []);
 
-  console.log(amount)
   
   
   

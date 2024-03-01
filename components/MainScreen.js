@@ -1,10 +1,12 @@
 // components/UsersScreen.js
 
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, View, TextInput, Button, TouchableOpacity, Text, ImageBackground, ScrollView } from 'react-native';
-import { useDB } from '../DBContext';
+import { StyleSheet, View, TextInput, Button, TouchableOpacity, Text, ImageBackground, ScrollView, Platform } from 'react-native';
+import { useDB, DATABASE_NAME } from '../DBContext';
 import { useFocusEffect } from '@react-navigation/native';
 import backgroundImage from '../assets/background.png';
+import * as FileSystem from 'expo-file-system';
+import * as Sharing from 'expo-sharing';
 
 export default function MainScreen(props) {
   const db = useDB();
@@ -37,6 +39,30 @@ export default function MainScreen(props) {
     }, [])
   );
 
+  const exportDb = async () => {
+    if (Platform.OS === "android") {
+      const permissions = await FileSystem.StorageAccessFramework.requestDirectoryPermissionsAsync();
+      if (permissions.granted) {
+        const base64 = await FileSystem.readAsStringAsync(
+          FileSystem.documentDirectory + 'SQLite/' + DATABASE_NAME,
+          {
+            encoding: FileSystem.EncodingType.Base64
+          }
+        );
+
+        await FileSystem.StorageAccessFramework.createFileAsync(permissions.directoryUri, DATABASE_NAME, 'application/octet-stream')
+        .then(async (uri) => {
+          await FileSystem.writeAsStringAsync(uri, base64, { encoding : FileSystem.EncodingType.Base64 });
+        })
+        .catch((e) => console.log(e));
+      } else {
+        console.log("Permission not granted");
+      }
+    } else {
+      await Sharing.shareAsync(FileSystem.documentDirectory + 'SQLite/' + DATABASE_NAME);
+    }
+  }
+
   const showNames = () => {
     return names.map((name, index) => {
       return (
@@ -55,6 +81,7 @@ export default function MainScreen(props) {
           <Button title="GESTIÓN USUARIO" onPress={() => props.navigation.navigate('ManageUser')} />
           <Button title="GESTIÓN PRODUCTOS" onPress={() => props.navigation.navigate('ManageProducts')} />
           <Button title="DEUDAS" onPress={() => props.navigation.navigate('Debts')} />
+          <Button title="Exportar Base de Datos" onPress={exportDb} />
         </View>
         <ScrollView contentContainerStyle={styles.namesContainer}>
           <View style={styles.namesWrapper}>
