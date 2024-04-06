@@ -1,39 +1,53 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, View, TextInput, Button, TouchableOpacity, Text, Alert, ScrollView, ImageBackground } from 'react-native';
-import { useDB } from '../DBContext';
-import { useFocusEffect } from '@react-navigation/native';
+import { StyleSheet, View, TextInput, Button, Text, Alert, ScrollView, ImageBackground } from 'react-native';
+import { apiurl } from '../apiContext';
 import backgroundImage from '../assets/background.png';
 
 export default function ManageProductsScreen(props) {
-  const db = useDB();
   const [currentProductName, setCurrentProductName] = useState('');
   const [currentProductPrice, setCurrentProductPrice] = useState('');
   const [products, setProducts] = useState([]);
 
   useEffect(() => {
-    db.transaction(tx => {
-      tx.executeSql('SELECT * FROM products', null, (_, resultSet) => setProducts(resultSet.rows._array));
-    });
+    fetchProducts();
   }, []);
 
-  const addProduct = () => {
+  const fetchProducts = async () => {
+    try {
+      const response = await fetch(`${apiurl}/products`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch products');
+      }
+      const data = await response.json();
+      setProducts(data);
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  const addProduct = async () => {
     if (!currentProductName.trim() || !currentProductPrice.trim()) {
       Alert.alert('Error', 'Por favor, completa todos los campos.');
       return;
     }
-    db.transaction(tx => {
-      tx.executeSql('INSERT INTO products (name, price) values (?, ?)', [currentProductName, parseFloat(currentProductPrice)],
-        (txObj, resultSet) => {
-          let existingProducts = [...products];
-          existingProducts.push({ id: resultSet.insertId, name: currentProductName, price: parseFloat(currentProductPrice) });
-          setProducts(existingProducts);
-          setCurrentProductName('');
-          setCurrentProductPrice('');
+    try {
+      const response = await fetch(`${apiurl}/products`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
         },
-        (txObj, error) => console.log(error)
-      );
-    });
-  }
+        body: JSON.stringify({ name: currentProductName, price: parseFloat(currentProductPrice.replace(',', '.')) }),
+      });
+      if (!response.ok) {
+        throw new Error('Failed to add product');
+      }
+      setCurrentProductName('');
+      setCurrentProductPrice('');
+      fetchProducts();
+    } catch (error) {
+      console.error(error);
+    }
+  };
 
   const tryDeleteProduct = (id) => {
     Alert.alert(
@@ -46,50 +60,51 @@ export default function ManageProductsScreen(props) {
     );
   };
 
-  const deleteProduct = (id) => {
-    db.transaction(tx => {
-      tx.executeSql('DELETE FROM products WHERE id = ?', [id],
-        (txObj, resultSet) => {
-          if (resultSet.rowsAffected > 0) {
-            let existingProducts = [...products].filter(product => product.id !== id);
-            setProducts(existingProducts);
-          }
-        },
-        (txObj, error) => console.log(error)
-      );
-    });
+  const deleteProduct = async (id) => {
+    try {
+      const response = await fetch(`${apiurl}/products/${id}`, {
+        method: 'DELETE',
+      });
+      if (!response.ok) {
+        throw new Error('Failed to delete product');
+      }
+      fetchProducts();
+    } catch (error) {
+      console.error(error);
+    }
   };
 
-  const updateProduct = (id) => {
+  const updateProduct = async (id) => {
     if (!currentProductName.trim() || !currentProductPrice.trim()) {
       const productToUpdate = products.find(product => product.id === id);
       setCurrentProductName(productToUpdate.name);
       setCurrentProductPrice(productToUpdate.price.toString());
       return;
     }
-    db.transaction(tx => {
-      tx.executeSql('UPDATE products SET name = ?, price = ? WHERE id = ?', [currentProductName, parseFloat(currentProductPrice), id],
-        (txObj, resultSet) => {
-          if (resultSet.rowsAffected > 0) {
-            let existingProducts = [...products];
-            const indexToUpdate = existingProducts.findIndex(product => product.id === id);
-            existingProducts[indexToUpdate].name = currentProductName;
-            existingProducts[indexToUpdate].price = parseFloat(currentProductPrice);
-            setProducts(existingProducts);
-            setCurrentProductName('');
-            setCurrentProductPrice('');
-          }
+    try {r
+      const response = await fetch(`${apiurl}/products/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
         },
-        (txObj, error) => console.log(error)
-      );
-    });
+        body: JSON.stringify({ name: currentProductName, price: parseFloat(currentProductPrice.replace(',', '.')) }),
+      });
+      if (!response.ok) {
+        throw new Error('Failed to update product');
+      }
+      setCurrentProductName('');
+      setCurrentProductPrice('');
+      fetchProducts();
+    } catch (error) {
+      console.error(error);
+    }
   };
 
   const showProducts = () => {
     return products.map((product, index) => (
       <View key={index} style={styles.row}>
         <Text style={styles.cell}>{product.name}</Text>
-        <Text style={styles.cell}>{product.price}€</Text>
+        <Text style={styles.cell}>{product.price.toFixed(2).replace('.', ',')} €</Text>
         <View style={styles.buttonContainer}>
           <Button title="Actualizar" onPress={() => updateProduct(product.id)} style={styles.button} />
           <View style={styles.buttonSpacer} />
@@ -119,9 +134,9 @@ export default function ManageProductsScreen(props) {
           <Button title="Añadir Producto" onPress={addProduct} style={styles.addButton} />
         </View>
         <ScrollView style={styles.table}>
-        <View style={styles.row}>
-            <Text style={styles.masterCell}>Productos</Text>    
-        </View> 
+          <View style={styles.row}>
+            <Text style={styles.masterCell}>Productos</Text>
+          </View>
           {showProducts()}
         </ScrollView>
       </View>
@@ -134,7 +149,7 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    width: '80%',
+    width: '90%',
   },
   inputRow: {
     flexDirection: 'row',

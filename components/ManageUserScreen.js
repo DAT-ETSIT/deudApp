@@ -1,35 +1,50 @@
 import React, { useState, useEffect } from 'react';
 import { StyleSheet, View, TextInput, Button, Text, Alert, ScrollView, ImageBackground } from 'react-native';
-import { useDB } from '../DBContext';
+import { apiurl } from '../apiContext';
 import backgroundImage from '../assets/background.png';
 
 export default function ManageUserScreen(props) {
-  const db = useDB();
   const [currentName, setCurrentName] = useState('');
   const [names, setNames] = useState([]);
 
   useEffect(() => {
-    db.transaction(tx => {
-      tx.executeSql('SELECT * FROM users', null, (_, resultSet) => setNames(resultSet.rows._array));
-    });
+    fetchUsers();
   }, []);
 
-  const addName = () => {
+  const fetchUsers = async () => {
+    try {
+      const response = await fetch(`${apiurl}/users`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch users');
+      }
+      const data = await response.json();
+      setNames(data);
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  const addName = async () => {
     if (!currentName.trim()) {
       Alert.alert('Error', 'Por favor, completa todos los campos.');
       return;
     }
-    db.transaction(tx => {
-      tx.executeSql('INSERT INTO users (name) values (?)', [currentName],
-        (txObj, resultSet) => {
-          let existingNames = [...names];
-          existingNames.push({ id: resultSet.insertId, name: currentName });
-          setNames(existingNames);
-          setCurrentName('');
+    try {
+      const response = await fetch(`${apiurl}/users`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
         },
-        (txObj, error) => console.log(error)
-      );
-    });
+        body: JSON.stringify({ name: currentName }),
+      });
+      if (!response.ok) {
+        throw new Error('Failed to create user');
+      }
+      setCurrentName('');
+      fetchUsers();
+    } catch (error) {
+      console.error(error);
+    }
   };
 
   const tryDeleteName = (id) => {
@@ -43,41 +58,43 @@ export default function ManageUserScreen(props) {
     );
   };
 
-  const deleteName = (id) => {
-    db.transaction(tx => {
-      tx.executeSql('DELETE FROM users WHERE id = ?', [id],
-        (txObj, resultSet) => {
-          if (resultSet.rowsAffected > 0) {
-            let existingNames = [...names].filter(name => name.id !== id);
-            setNames(existingNames);
-          }
-        },
-        (txObj, error) => console.log(error)
-      );
-    });
+  const deleteName = async (id) => {
+    try {
+      const response = await fetch(`${apiurl}/users/${id}`, {
+        method: 'DELETE',
+      });
+      if (!response.ok) {
+        throw new Error('Failed to delete user');
+      }
+      fetchUsers();
+    } catch (error) {
+      console.error(error);
+    }
   };
 
-  const updateName = (id) => {
+  const updateName = async (id) => {
     if (!currentName.trim()) {
       const nameToUpdate = names.find(name => name.id === id);
       setCurrentName(nameToUpdate.name);
       return;
     }
 
-    db.transaction(tx => {
-      tx.executeSql('UPDATE users SET name = ? WHERE id = ?', [currentName, id],
-        (txObj, resultSet) => {
-          if (resultSet.rowsAffected > 0) {
-            let existingNames = [...names];
-            const indexToUpdate = existingNames.findIndex(name => name.id === id);
-            existingNames[indexToUpdate].name = currentName;
-            setNames(existingNames);
-            setCurrentName('');
-          }
+    try {
+      const response = await fetch(`${apiurl}/users/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
         },
-        (txObj, error) => console.log(error)
-      );
-    });
+        body: JSON.stringify({ name: currentName }),
+      });
+      if (!response.ok) {
+        throw new Error('Failed to update user');
+      }
+      setCurrentName('');
+      fetchUsers();
+    } catch (error) {
+      console.error(error);
+    }
   };
 
   const showNames = () => {
@@ -106,9 +123,9 @@ export default function ManageUserScreen(props) {
           <Button title="Añadir Nombre" onPress={addName} style={styles.addButton} />
         </View>
         <ScrollView style={styles.table}>
-        <View style={styles.row}>
-            <Text style={styles.masterCell}>Usuarios</Text>    
-        </View> 
+          <View style={styles.row}>
+            <Text style={styles.masterCell}>Usuarios</Text>
+          </View>
           {showNames()}
         </ScrollView>
       </View>
