@@ -1,14 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, View, TextInput, Button, Text, Alert, ScrollView, ImageBackground } from 'react-native';
+import { StyleSheet, View, TextInput, TouchableOpacity, Text, Alert, ScrollView, ImageBackground } from 'react-native';
 import { apiurl } from '../apiContext';
 import backgroundImage from '../assets/background.png';
 import { useFocusEffect } from '@react-navigation/native';
+import { FontAwesome } from '@expo/vector-icons'; // Importa FontAwesome desde el paquete @expo/vector-icons
 
 export default function ManageUserScreen(props) {
   const [currentName, setCurrentName] = useState('');
   const [names, setNames] = useState([]);
   const [showAddButton, setShowAddButton] = useState(true);
-  const [updateButton, setUpdateButton] = useState(false);
   const [currentId, setCurrentId] = useState(null);
 
   useEffect(() => {
@@ -87,9 +87,6 @@ export default function ManageUserScreen(props) {
       const nameToUpdate = names.find(name => name.id === id);
       setCurrentName(nameToUpdate.name);
       setShowAddButton(false);
-      setUpdateButton(
-        <Button title="Actualizar" onPress={() => updateName(id)} style={styles.button} />
-      );
       setCurrentId(id);
       return;
     }
@@ -118,9 +115,12 @@ export default function ManageUserScreen(props) {
       <View key={index} style={styles.row}>
         <Text style={styles.name}>{name.name}</Text>
         <View style={styles.buttonContainer}>
-          <Button title="Actualizar" onPress={() => updateName(name.id)} style={styles.button} />
-          <View style={styles.buttonSpacer} />
-          <Button title="Borrar" onPress={() => tryDeleteName(name.id)} style={styles.button} />
+          <TouchableOpacity style={styles.button} onPress={() => updateName(name.id)}>
+            <Text style={styles.buttonText}>Actualizar</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.deleteButton} onPress={() => tryDeleteName(name.id)}>
+            <FontAwesome name="trash" size={20} color="white" />
+          </TouchableOpacity>
         </View>
       </View>
     ));
@@ -136,13 +136,18 @@ export default function ManageUserScreen(props) {
             onChangeText={setCurrentName}
             style={styles.input}
           />
-          {showAddButton && <Button title="Añadir Nombre" onPress={addName} style={styles.addButton} />}
+          {showAddButton && (
+            <TouchableOpacity style={styles.addButton} onPress={addName}>
+              <Text style={styles.buttonText}>Añadir</Text>
+            </TouchableOpacity>
+          )}
           {!showAddButton && currentId && (
-            <Button
-              title="Actualizar"
+            <TouchableOpacity
+              style={styles.updateButton}
               onPress={() => updateName(currentId)}
-              style={styles.button}
-            />
+            >
+              <Text style={styles.buttonText}>Actualizar</Text>
+            </TouchableOpacity>
           )}
         </View>
         <ScrollView style={styles.table}>
@@ -180,6 +185,19 @@ const styles = StyleSheet.create({
     marginRight: 10,
   },
   addButton: {
+    backgroundColor: 'green', // Color del botón de añadir
+    padding: 10,
+    borderRadius: 5,
+    justifyContent: 'center',
+    alignItems: 'center',
+    flex: 0.3,
+  },
+  updateButton: {
+    backgroundColor: 'blue', // Color del botón de actualizar
+    padding: 10,
+    borderRadius: 5,
+    justifyContent: 'center',
+    alignItems: 'center',
     flex: 0.3,
   },
   table: {
@@ -204,10 +222,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   button: {
-    marginHorizontal: 4,
+    backgroundColor: 'lightblue', // Color del botón de actualizar
+    padding: 10,
+    borderRadius: 5,
+    marginRight: 10,
   },
-  buttonSpacer: {
-    width: 8,
+  deleteButton: {
+    backgroundColor: 'red', // Color del botón de borrar
+    padding: 10,
+    borderRadius: 5,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  buttonText: {
+    color: 'white',
+    fontSize: 16,
   },
   background: {
     flex: 1,

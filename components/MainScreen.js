@@ -49,8 +49,7 @@ export default function MainScreen(props) {
   const showNames = () => {
     return names.map((name, index) => {
       return (
-        <TouchableOpacity key={index} style={styles.button}
-        onPress={() => props.navigation.navigate('Board',{name: name})} >
+        <TouchableOpacity key={index} style={styles.button} onPress={() => props.navigation.navigate('Board', { name: name })}>
           <Text style={styles.buttonText}>{name.name}</Text>
         </TouchableOpacity>
       );
@@ -61,9 +60,7 @@ export default function MainScreen(props) {
     <ImageBackground source={backgroundImage} style={styles.background}>
       <View style={styles.container}>
         <ScrollView contentContainerStyle={styles.namesContainer}>
-          <View style={styles.namesWrapper}>
-            {showNames()}
-          </View>
+          <View style={styles.namesWrapper}>{showNames()}</View>
         </ScrollView>
       </View>
     </ImageBackground>
@@ -78,21 +75,24 @@ const styles = StyleSheet.create({
     width: '90%',
   },
   button: {
-    backgroundColor: '#4CAF50',
+    backgroundColor: '#3f51b5',
     padding: 15,
     margin: 5,
-    borderRadius: 10,
+    borderRadius: 15,
     width: '45%',
     alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.55,
+    shadowRadius: 3.84,
+    elevation: 5,
   },
   buttonText: {
     color: 'white',
     fontSize: 18,
-  },
-  row: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 10,
   },
   namesContainer: {
     flexGrow: 1,

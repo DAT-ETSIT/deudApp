@@ -1,15 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, View, TextInput, Button, Text, Alert, ScrollView, ImageBackground } from 'react-native';
+import { StyleSheet, View, TextInput, TouchableOpacity, Text, Alert, ScrollView, ImageBackground } from 'react-native';
 import { apiurl } from '../apiContext';
 import backgroundImage from '../assets/background.png';
 import { useFocusEffect } from '@react-navigation/native';
+import { FontAwesome } from '@expo/vector-icons'; // Importa FontAwesome desde el paquete @expo/vector-icons
 
 export default function ManageProductsScreen(props) {
   const [currentProductName, setCurrentProductName] = useState('');
   const [currentProductPrice, setCurrentProductPrice] = useState('');
   const [products, setProducts] = useState([]);
   const [showAddButton, setShowAddButton] = useState(true);
-  const [updateButton, setUpdateButton] = useState(false);
   const [currentProductId, setCurrentProductId] = useState(null);
 
   useEffect(() => {
@@ -90,9 +90,6 @@ export default function ManageProductsScreen(props) {
       setCurrentProductName(productToUpdate.name);
       setCurrentProductPrice(productToUpdate.price.toString());
       setShowAddButton(false);
-      setUpdateButton(
-        <Button title="Actualizar" onPress={() => updateProduct(id)} style={styles.button} />
-      );
       setCurrentProductId(id);
       return;
     }
@@ -122,9 +119,12 @@ export default function ManageProductsScreen(props) {
         <Text style={styles.cell}>{product.name}</Text>
         <Text style={styles.cell}>{product.price.toFixed(2).replace('.', ',')} €</Text>
         <View style={styles.buttonContainer}>
-          <Button title="Actualizar" onPress={() => updateProduct(product.id)} style={styles.button} />
-          <View style={styles.buttonSpacer} />
-          <Button title="Borrar" onPress={() => tryDeleteProduct(product.id)} style={styles.button} />
+          <TouchableOpacity style={styles.button} onPress={() => updateProduct(product.id)}>
+            <Text style={styles.updateButton}>Actualizar</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.deleteButton} onPress={() => tryDeleteProduct(product.id)}>
+            <FontAwesome name="trash" size={20} color="white" />
+          </TouchableOpacity>
         </View>
       </View>
     ));
@@ -147,13 +147,15 @@ export default function ManageProductsScreen(props) {
             style={[styles.input, styles.priceInput]}
             keyboardType="numeric"
           />
-          {showAddButton && <Button title="Añadir Producto" onPress={addProduct} style={styles.addButton} />}
+          {showAddButton && (
+            <TouchableOpacity style={styles.addButton} onPress={addProduct}>
+              <Text style={styles.buttonText}>Añadir</Text>
+            </TouchableOpacity>
+          )}
           {!showAddButton && currentProductId && (
-            <Button
-              title="Actualizar"
-              onPress={() => updateProduct(currentProductId)}
-              style={styles.button}
-            />
+            <TouchableOpacity style={styles.updateButton} onPress={() => updateProduct(currentProductId)}>
+              <Text style={styles.buttonText}>Actualizar</Text>
+            </TouchableOpacity>
           )}
         </View>
         <ScrollView style={styles.table}>
@@ -197,7 +199,30 @@ const styles = StyleSheet.create({
     marginRight: 10,
   },
   addButton: {
-    flex: 0.3,
+    backgroundColor: '#4CAF50',
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 5,
+    alignItems: 'center',
+  },
+  updateButton: {
+    backgroundColor: '#4CAF50', 
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 5,
+    alignItems: 'center',
+    marginLeft: 10,
+  },
+  deleteButton: {
+    backgroundColor: 'tomato',
+    padding: 10,
+    borderRadius: 5,
+    alignItems: 'center',
+  },
+  buttonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
   table: {
     width: '90%',
@@ -226,9 +251,6 @@ const styles = StyleSheet.create({
   },
   button: {
     marginHorizontal: 4,
-  },
-  buttonSpacer: {
-    width: 8,
   },
   background: {
     flex: 1,
