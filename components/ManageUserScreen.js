@@ -3,7 +3,8 @@ import { StyleSheet, View, TextInput, TouchableOpacity, Text, Alert, ScrollView,
 import { apiurl } from '../apiContext';
 import backgroundImage from '../assets/background.png';
 import { useFocusEffect } from '@react-navigation/native';
-import { FontAwesome } from '@expo/vector-icons'; // Importa FontAwesome desde el paquete @expo/vector-icons
+import { FontAwesome, AntDesign  } from '@expo/vector-icons';
+
 
 export default function ManageUserScreen(props) {
   const [currentName, setCurrentName] = useState('');
@@ -116,7 +117,7 @@ export default function ManageUserScreen(props) {
         <Text style={styles.name}>{name.name}</Text>
         <View style={styles.buttonContainer}>
           <TouchableOpacity style={styles.button} onPress={() => updateName(name.id)}>
-            <Text style={styles.buttonText}>Actualizar</Text>
+            <FontAwesome name="edit" size={20} color="white" />
           </TouchableOpacity>
           <TouchableOpacity style={styles.deleteButton} onPress={() => tryDeleteName(name.id)}>
             <FontAwesome name="trash" size={20} color="white" />
@@ -138,15 +139,15 @@ export default function ManageUserScreen(props) {
           />
           {showAddButton && (
             <TouchableOpacity style={styles.addButton} onPress={addName}>
-              <Text style={styles.buttonText}>Añadir</Text>
+              <AntDesign name="adduser" size={24} color="white" />
             </TouchableOpacity>
           )}
           {!showAddButton && currentId && (
             <TouchableOpacity
-              style={styles.updateButton}
+              style={styles.updateButtonUpper}
               onPress={() => updateName(currentId)}
             >
-              <Text style={styles.buttonText}>Actualizar</Text>
+              <FontAwesome name="edit" size={20} color="white" />
             </TouchableOpacity>
           )}
         </View>
@@ -185,16 +186,26 @@ const styles = StyleSheet.create({
     marginRight: 10,
   },
   addButton: {
-    backgroundColor: 'green', // Color del botón de añadir
+    backgroundColor: '#4CAF50', // Color del botón de añadir
     padding: 10,
+    paddingHorizontal: 1,
     borderRadius: 5,
     justifyContent: 'center',
     alignItems: 'center',
     flex: 0.3,
   },
   updateButton: {
-    backgroundColor: 'blue', // Color del botón de actualizar
-    padding: 10,
+    backgroundColor: '#e4a11b', // Color del botón de actualizar
+    paddingHorizontal: 15,
+    borderRadius: 5,
+    justifyContent: 'center',
+    alignItems: 'center',
+    flex: 0.3,
+  },
+  updateButtonUpper: {
+    backgroundColor: '#4CAF50', // Color del botón de actualizar
+    paddingHorizontal: 1,
+    paddingVertical: 12,
     borderRadius: 5,
     justifyContent: 'center',
     alignItems: 'center',
@@ -222,7 +233,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   button: {
-    backgroundColor: 'lightblue', // Color del botón de actualizar
+    backgroundColor: '#e4a11b', // Color del botón de actualizar
     padding: 10,
     borderRadius: 5,
     marginRight: 10,

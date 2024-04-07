@@ -10,6 +10,7 @@ export default function DebtsScreen(props) {
   const [debtData, setDebtData] = useState([]);
   const [totalDebt, setTotalDebt] = useState(0);
   const [daysSinceLastReset, setDaysSinceLastReset] = useState(null);
+  const [password, setPassword] = useState('');
 
   useEffect(() => {
     fetchDebts();
@@ -36,7 +37,6 @@ export default function DebtsScreen(props) {
   };
   
 
-
   const handleReset = () => {
     // Mostrar una alerta para confirmar el reset
     Alert.alert(
@@ -57,12 +57,20 @@ export default function DebtsScreen(props) {
   };
 
   const performReset = () => {
+    // Comprobar si la contraseña es correcta
+    if (password.trim() !== 'perico321') {
+      Alert.alert('Error', 'Contraseña incorrecta.');
+      return;
+    }
+
+    // Realizar el reset si la contraseña es correcta
     fetch(`${apiurl}/resets`, {
       method: 'POST',
     })
       .then(response => {
         if (response.ok) {
           console.log('Reset realizado correctamente.');
+          setPassword('');
           fetchDebts();
           calculateDaysSinceLastReset();
         } else {
@@ -110,11 +118,20 @@ export default function DebtsScreen(props) {
   return (
     <ImageBackground source={backgroundImage} style={styles.background}>
       <View style={styles.container}>
+        <Text style={styles.daysSinceReset}>
+          {daysSinceLastReset !== null ? `${daysSinceLastReset} días desde el último reset` : '0 días desde el último reset'}
+        </Text>
         <View style={styles.resetContainer}>
-          <Button title="Reset" onPress={handleReset} />
-          <Text style={styles.daysSinceReset}>
-            {daysSinceLastReset !== null ? `(${daysSinceLastReset} días desde el último reset)` : ''}
-          </Text>
+          <TextInput
+            style={styles.passwordInput}
+            value={password}
+            onChangeText={setPassword}
+            placeholder="Contraseña"
+            secureTextEntry
+          />
+          <TouchableOpacity style={styles.resetButton} onPress={handleReset}>
+            <Text style={styles.resetButtonText}>Reset</Text>
+          </TouchableOpacity>
         </View>
         <Text style={styles.header}>Usuarios y Deudas:</Text>
         {debtData.map((item, index) => (
@@ -136,8 +153,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     alignItems: 'center',
-    justifyContent: 'center',
+    justifyContent: 'top',
     padding: 20,
+    width: '85%',
   },
   resetContainer: {
     flexDirection: 'row',
@@ -145,8 +163,9 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   daysSinceReset: {
-    marginLeft: 10,
+    marginBottom: 10,
     fontSize: 16,
+    alignSelf: 'flex-start',
   },
   header: {
     fontSize: 20,
@@ -176,5 +195,24 @@ const styles = StyleSheet.create({
     resizeMode: 'cover',
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  passwordInput: {
+    flex: 1,
+    height: 40,
+    borderColor: 'gray',
+    borderWidth: 1,
+    marginRight: 10,
+    paddingHorizontal: 10,
+    borderRadius: 5,
+  },
+  resetButton: {
+    backgroundColor: '#e4a11b',
+    padding: 10,
+    borderRadius: 5,
+  },
+  resetButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
 });

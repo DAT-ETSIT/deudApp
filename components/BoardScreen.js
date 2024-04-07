@@ -129,7 +129,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    width: '80%',
+    width: '88%',
     marginBottom: 10,
   },
   productName: {
@@ -142,6 +142,8 @@ const styles = StyleSheet.create({
   quantityContainer: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'flex-end',
+    margin: 5,
   },
   quantityButtonLess: {
     fontSize: 20,
@@ -161,6 +163,7 @@ const styles = StyleSheet.create({
   },
   quantity: {
     fontSize: 16,
-    paddingHorizontal: 10,
+    paddingHorizontal: 5,
+    fontWeight: 'bold',
   },
 });

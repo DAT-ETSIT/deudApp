@@ -3,7 +3,7 @@ import { StyleSheet, View, TextInput, TouchableOpacity, Text, Alert, ScrollView,
 import { apiurl } from '../apiContext';
 import backgroundImage from '../assets/background.png';
 import { useFocusEffect } from '@react-navigation/native';
-import { FontAwesome } from '@expo/vector-icons'; // Importa FontAwesome desde el paquete @expo/vector-icons
+import { FontAwesome, MaterialIcons } from '@expo/vector-icons';
 
 export default function ManageProductsScreen(props) {
   const [currentProductName, setCurrentProductName] = useState('');
@@ -117,10 +117,10 @@ export default function ManageProductsScreen(props) {
     return products.map((product, index) => (
       <View key={index} style={styles.row}>
         <Text style={styles.cell}>{product.name}</Text>
-        <Text style={styles.cell}>{product.price.toFixed(2).replace('.', ',')} €</Text>
+        <Text style={[styles.cell, styles.priceCell]}>{product.price.toFixed(2).replace('.', ',')} €</Text>
         <View style={styles.buttonContainer}>
           <TouchableOpacity style={styles.button} onPress={() => updateProduct(product.id)}>
-            <Text style={styles.updateButton}>Actualizar</Text>
+            <FontAwesome name="edit" size={20} color="white" />
           </TouchableOpacity>
           <TouchableOpacity style={styles.deleteButton} onPress={() => tryDeleteProduct(product.id)}>
             <FontAwesome name="trash" size={20} color="white" />
@@ -149,12 +149,12 @@ export default function ManageProductsScreen(props) {
           />
           {showAddButton && (
             <TouchableOpacity style={styles.addButton} onPress={addProduct}>
-              <Text style={styles.buttonText}>Añadir</Text>
+              <MaterialIcons name="add-shopping-cart" size={24} color="white" />
             </TouchableOpacity>
           )}
           {!showAddButton && currentProductId && (
-            <TouchableOpacity style={styles.updateButton} onPress={() => updateProduct(currentProductId)}>
-              <Text style={styles.buttonText}>Actualizar</Text>
+            <TouchableOpacity style={styles.updateButtonUpper} onPress={() => updateProduct(currentProductId)}>
+              <FontAwesome name="edit" size={20} color="white" />
             </TouchableOpacity>
           )}
         </View>
@@ -200,21 +200,29 @@ const styles = StyleSheet.create({
   },
   addButton: {
     backgroundColor: '#4CAF50',
-    paddingVertical: 10,
-    paddingHorizontal: 20,
+    padding: 10,
     borderRadius: 5,
+    justifyContent: 'center',
     alignItems: 'center',
+    flex: 0.3,
   },
   updateButton: {
-    backgroundColor: '#4CAF50', 
-    paddingVertical: 10,
-    paddingHorizontal: 20,
+    backgroundColor: '#e4a11b', 
+    padding: 10,
     borderRadius: 5,
+    marginRight: 10,
+  },
+  updateButtonUpper: {
+    backgroundColor: '#4CAF50', 
+    paddingHorizontal: 10,
+    paddingVertical: 12,
+    borderRadius: 5,
+    justifyContent: 'center',
     alignItems: 'center',
-    marginLeft: 10,
+    flex: 0.3,
   },
   deleteButton: {
-    backgroundColor: 'tomato',
+    backgroundColor: 'red',
     padding: 10,
     borderRadius: 5,
     alignItems: 'center',
@@ -222,7 +230,6 @@ const styles = StyleSheet.create({
   buttonText: {
     color: 'white',
     fontSize: 16,
-    fontWeight: 'bold',
   },
   table: {
     width: '90%',
@@ -241,6 +248,10 @@ const styles = StyleSheet.create({
   cell: {
     fontSize: 16,
   },
+  priceCell: {
+    textAlign: 'left',
+    paddingLeft: 20
+  },
   masterCell: {
     fontSize: 24,
     fontWeight: 'bold',
@@ -250,7 +261,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   button: {
-    marginHorizontal: 4,
+    backgroundColor: '#e4a11b',
+    padding: 10,
+    borderRadius: 5,
+    marginRight: 10,
   },
   background: {
     flex: 1,
