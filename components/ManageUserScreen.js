@@ -7,6 +7,9 @@ import { useFocusEffect } from '@react-navigation/native';
 export default function ManageUserScreen(props) {
   const [currentName, setCurrentName] = useState('');
   const [names, setNames] = useState([]);
+  const [showAddButton, setShowAddButton] = useState(true);
+  const [updateButton, setUpdateButton] = useState(false);
+  const [currentId, setCurrentId] = useState(null);
 
   useEffect(() => {
     fetchUsers();
@@ -83,6 +86,11 @@ export default function ManageUserScreen(props) {
     if (!currentName.trim()) {
       const nameToUpdate = names.find(name => name.id === id);
       setCurrentName(nameToUpdate.name);
+      setShowAddButton(false);
+      setUpdateButton(
+        <Button title="Actualizar" onPress={() => updateName(id)} style={styles.button} />
+      );
+      setCurrentId(id);
       return;
     }
 
@@ -98,6 +106,7 @@ export default function ManageUserScreen(props) {
         throw new Error('Failed to update user');
       }
       setCurrentName('');
+      setShowAddButton(true);
       fetchUsers();
     } catch (error) {
       console.error(error);
@@ -127,7 +136,14 @@ export default function ManageUserScreen(props) {
             onChangeText={setCurrentName}
             style={styles.input}
           />
-          <Button title="Añadir Nombre" onPress={addName} style={styles.addButton} />
+          {showAddButton && <Button title="Añadir Nombre" onPress={addName} style={styles.addButton} />}
+          {!showAddButton && currentId && (
+            <Button
+              title="Actualizar"
+              onPress={() => updateName(currentId)}
+              style={styles.button}
+            />
+          )}
         </View>
         <ScrollView style={styles.table}>
           <View style={styles.row}>

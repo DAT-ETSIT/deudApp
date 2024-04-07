@@ -8,6 +8,9 @@ export default function ManageProductsScreen(props) {
   const [currentProductName, setCurrentProductName] = useState('');
   const [currentProductPrice, setCurrentProductPrice] = useState('');
   const [products, setProducts] = useState([]);
+  const [showAddButton, setShowAddButton] = useState(true);
+  const [updateButton, setUpdateButton] = useState(false);
+  const [currentProductId, setCurrentProductId] = useState(null);
 
   useEffect(() => {
     fetchProducts();
@@ -86,9 +89,14 @@ export default function ManageProductsScreen(props) {
       const productToUpdate = products.find(product => product.id === id);
       setCurrentProductName(productToUpdate.name);
       setCurrentProductPrice(productToUpdate.price.toString());
+      setShowAddButton(false);
+      setUpdateButton(
+        <Button title="Actualizar" onPress={() => updateProduct(id)} style={styles.button} />
+      );
+      setCurrentProductId(id);
       return;
     }
-    try {r
+    try {
       const response = await fetch(`${apiurl}/products/${id}`, {
         method: 'PUT',
         headers: {
@@ -101,6 +109,7 @@ export default function ManageProductsScreen(props) {
       }
       setCurrentProductName('');
       setCurrentProductPrice('');
+      setShowAddButton(true);
       fetchProducts();
     } catch (error) {
       console.error(error);
@@ -138,7 +147,14 @@ export default function ManageProductsScreen(props) {
             style={[styles.input, styles.priceInput]}
             keyboardType="numeric"
           />
-          <Button title="Añadir Producto" onPress={addProduct} style={styles.addButton} />
+          {showAddButton && <Button title="Añadir Producto" onPress={addProduct} style={styles.addButton} />}
+          {!showAddButton && currentProductId && (
+            <Button
+              title="Actualizar"
+              onPress={() => updateProduct(currentProductId)}
+              style={styles.button}
+            />
+          )}
         </View>
         <ScrollView style={styles.table}>
           <View style={styles.row}>

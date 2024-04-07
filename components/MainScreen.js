@@ -60,11 +60,6 @@ export default function MainScreen(props) {
   return (
     <ImageBackground source={backgroundImage} style={styles.background}>
       <View style={styles.container}>
-        <View style={styles.topRow}>
-          <Button title="GESTIÓN USUARIO" onPress={() => props.navigation.navigate('ManageUser')} />
-          <Button title="GESTIÓN PRODUCTOS" onPress={() => props.navigation.navigate('ManageProducts')} />
-          <Button title="DEUDAS" onPress={() => props.navigation.navigate('Debts')} />
-        </View>
         <ScrollView contentContainerStyle={styles.namesContainer}>
           <View style={styles.namesWrapper}>
             {showNames()}
@@ -115,11 +110,5 @@ const styles = StyleSheet.create({
     resizeMode: 'cover',
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  topRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 10,
-    width: '100%',
   },
 });
