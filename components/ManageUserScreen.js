@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { StyleSheet, View, TextInput, Button, Text, Alert, ScrollView, ImageBackground } from 'react-native';
 import { apiurl } from '../apiContext';
 import backgroundImage from '../assets/background.png';
+import { useFocusEffect } from '@react-navigation/native';
 
 export default function ManageUserScreen(props) {
   const [currentName, setCurrentName] = useState('');
@@ -10,6 +11,12 @@ export default function ManageUserScreen(props) {
   useEffect(() => {
     fetchUsers();
   }, []);
+
+  useFocusEffect(
+    React.useCallback(() => {
+      fetchUsers();
+    }, [])
+  );
 
   const fetchUsers = async () => {
     try {

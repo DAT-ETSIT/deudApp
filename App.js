@@ -15,11 +15,26 @@ import BoardScreen from './components/BoardScreen';
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
 
+const HomeStack = () => (
+  <Stack.Navigator>
+    <Stack.Screen
+      name="Main"
+      component={MainScreen}
+      options={{ title: 'Inicio', headerShown: false }}
+    />
+    <Stack.Screen
+      name="Board"
+      component={BoardScreen}
+      options={{ title: 'Añadir Productos'}}
+    />
+  </Stack.Navigator>
+);
+
 export default function App() {
   return (
     <NavigationContainer>
       <Tab.Navigator
-        screenOptions={({ route }) => ({
+        screenOptions={({ route, navigation }) => ({
           tabBarActiveTintColor: 'tomato',
           tabBarInactiveTintColor: 'gray',
           tabBarStyle: {
@@ -44,7 +59,7 @@ export default function App() {
           },
         })}
       >
-        <Tab.Screen name="Home" component={MainScreen} options={{ title: 'Inicio' }} />
+        <Tab.Screen name="Home" component={HomeStack} options={{ title: 'Inicio' }} />
         <Tab.Screen name="Users" component={ManageUserScreen} options={{ title: 'Usuarios' }} />
         <Tab.Screen name="Products" component={ManageProductsScreen} options={{ title: 'Productos' }} />
         <Tab.Screen name="Debts" component={DebtsScreen} options={{ title: 'Deudas' }} />

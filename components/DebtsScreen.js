@@ -16,6 +16,13 @@ export default function DebtsScreen(props) {
     calculateDaysSinceLastReset();
   }, []);
 
+  useFocusEffect(
+    React.useCallback(() => {
+      fetchDebts();
+      calculateDaysSinceLastReset();
+    }, [])
+  );
+
   const fetchDebts = () => {
     fetch(`${apiurl}/debts`)
       .then(response => response.json())

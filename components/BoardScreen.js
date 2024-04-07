@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { StyleSheet, View, Text, ScrollView, TouchableOpacity, ImageBackground, Alert } from 'react-native';
 import backgroundImage from '../assets/background.png';
 import { apiurl } from '../apiContext';
+import { useFocusEffect } from '@react-navigation/native';
 
 export default function ManageProductsScreen(props) {
   const [products, setProducts] = useState([]);
@@ -21,6 +22,21 @@ export default function ManageProductsScreen(props) {
       .then(data => setAmount(data))
       .catch(error => console.error('Error fetching transactions:', error));
   }, []);
+
+  useFocusEffect(
+    React.useCallback(() => {
+      fetch(`${apiurl}/products`)
+      .then(response => response.json())
+      .then(data => setProducts(data))
+      .catch(error => console.error('Error fetching products:', error));
+    
+    // Obtener cantidades desde la API
+    fetch(`${apiurl}/transactions/user/${userId}`)
+      .then(response => response.json())
+      .then(data => setAmount(data))
+      .catch(error => console.error('Error fetching transactions:', error));
+    }, [])
+  );
 
   const addItem = (productId, button) => {
     const type = button === '+' ? '+' : '-';
