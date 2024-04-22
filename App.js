@@ -25,7 +25,7 @@ const HomeStack = () => (
     <Stack.Screen
       name="Board"
       component={BoardScreen}
-      options={{ title: 'Añadir Productos'}}
+      options={{ title: 'Añadir Productos', headerShown: false}}
     />
   </Stack.Navigator>
 );

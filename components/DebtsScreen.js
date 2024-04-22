@@ -163,14 +163,16 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   daysSinceReset: {
-    marginBottom: 10,
-    fontSize: 16,
+    marginBottom: 2,
+    fontSize: 10,
     alignSelf: 'flex-start',
+    color: 'gray',
   },
   header: {
     fontSize: 20,
     fontWeight: 'bold',
-    marginBottom: 10,
+    marginBottom: 20,
+    marginTop: 20,
   },
   item: {
     flexDirection: 'row',
