@@ -116,6 +116,9 @@ export default function ManageUserScreen(props) {
       <View key={index} style={styles.row}>
         <Text style={styles.name}>{name.name}</Text>
         <View style={styles.buttonContainer}>
+        <TouchableOpacity style={styles.buttonCart} onPress={() => props.navigation.navigate('Board', { name: name })}>
+            <FontAwesome name="cart-plus" size={20} color="white" />
+          </TouchableOpacity>
           <TouchableOpacity style={styles.button} onPress={() => updateName(name.id)}>
             <FontAwesome name="edit" size={20} color="white" />
           </TouchableOpacity>
@@ -234,6 +237,12 @@ const styles = StyleSheet.create({
   },
   button: {
     backgroundColor: '#e4a11b', // Color del botón de actualizar
+    padding: 10,
+    borderRadius: 5,
+    marginRight: 10,
+  },
+  buttonCart: {
+    backgroundColor: '#4CAF50',
     padding: 10,
     borderRadius: 5,
     marginRight: 10,
