@@ -11,7 +11,8 @@ export default function ManageProductsScreen(props) {
   const [products, setProducts] = useState([]);
   const [showAddButton, setShowAddButton] = useState(true);
   const [currentProductId, setCurrentProductId] = useState(null);
-  const [editingProductId, setEditingProductId] = useState(null); // Estado para almacenar el ID del producto en edición
+  const [editingProductId, setEditingProductId] = useState(null);
+  const [currentProductUrl, setCurrentProductUrl] = useState('');
   const db = useDB();
 
   useEffect(() => {
@@ -62,7 +63,7 @@ export default function ManageProductsScreen(props) {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ name: currentProductName, price: parseFloat(currentProductPrice.replace(',', '.')) }),
+        body: JSON.stringify({ name: currentProductName, price: parseFloat(currentProductPrice.replace(',', '.')), photoUrl: currentProductUrl}),
       });
       if (!response.ok) {
         throw new Error('Failed to add product');
@@ -105,6 +106,7 @@ export default function ManageProductsScreen(props) {
       const productToUpdate = products.find(product => product.id === id);
       setCurrentProductName(productToUpdate.name);
       setCurrentProductPrice(productToUpdate.price.toString());
+      setCurrentProductUrl(productToUpdate.photoUrl);
       setShowAddButton(false);
       setCurrentProductId(id);
       setEditingProductId(id); // Establecer el ID del producto en edición
@@ -116,13 +118,14 @@ export default function ManageProductsScreen(props) {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ name: currentProductName, price: parseFloat(currentProductPrice.replace(',', '.')) }),
+        body: JSON.stringify({ name: currentProductName, price: parseFloat(currentProductPrice.replace(',', '.')), photoUrl: currentProductUrl}),
       });
       if (!response.ok) {
         throw new Error('Failed to update product');
       }
       setCurrentProductName('');
       setCurrentProductPrice('');
+      setCurrentProductUrl('');
       setShowAddButton(true);
       setEditingProductId(null); // Restablecer el ID del producto en edición a null
       fetchProducts();
@@ -171,6 +174,14 @@ export default function ManageProductsScreen(props) {
             style={[styles.input, styles.priceInput]}
             keyboardType="numeric"
           />
+          </View>
+          <View style={styles.inputRow2}>
+          <TextInput
+            value={currentProductUrl}
+            placeholder="Foto URL"
+            onChangeText={setCurrentProductUrl}
+            style={[styles.input, styles.nameInput]}
+          />
           {showAddButton && (
             <TouchableOpacity style={styles.addButton} onPress={addProduct}>
               <MaterialIcons name="add-shopping-cart" size={24} color="white" />
@@ -208,6 +219,13 @@ const styles = StyleSheet.create({
     marginTop: 20,
     marginBottom: 10,
   },
+  inputRow2: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    width: '80%',
+    marginBottom: 10,
+  },
   input: {
     borderWidth: 1,
     borderColor: 'gray',
@@ -215,6 +233,14 @@ const styles = StyleSheet.create({
     padding: 8,
     flex: 1,
     marginRight: 10,
+  },
+  urlInput: {
+    borderWidth: 1,
+    borderColor: 'gray',
+    borderRadius: 5,
+    flex: 1,
+    marginRight: 10,
+    marginTop: -10,
   },
   nameInput: {
     marginRight: 10,
