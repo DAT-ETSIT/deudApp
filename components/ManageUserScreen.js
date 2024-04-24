@@ -1,26 +1,54 @@
 import React, { useState, useEffect } from 'react';
 import { StyleSheet, View, TextInput, TouchableOpacity, Text, Alert, ScrollView, ImageBackground } from 'react-native';
-import { apiurl } from '../apiContext';
+import { apiurl, useDB } from '../apiContext';
 import backgroundImage from '../assets/background.png';
 import { useFocusEffect } from '@react-navigation/native';
-import { FontAwesome, AntDesign  } from '@expo/vector-icons';
-
+import { FontAwesome, AntDesign } from '@expo/vector-icons';
 
 export default function ManageUserScreen(props) {
   const [currentName, setCurrentName] = useState('');
   const [names, setNames] = useState([]);
   const [showAddButton, setShowAddButton] = useState(true);
   const [currentId, setCurrentId] = useState(null);
+  const [editingId, setEditingId] = useState(null);
+  const [user, setUser] = useState(null);
+  const db = useDB();
 
   useEffect(() => {
-    fetchUsers();
+    checkLogin();
   }, []);
 
   useFocusEffect(
     React.useCallback(() => {
-      fetchUsers();
+      checkLogin();
     }, [])
   );
+
+  const checkLogin = async () => {
+    db.transaction(tx => {
+      tx.executeSql('CREATE TABLE IF NOT EXISTS session (id INTEGER PRIMARY KEY, sessionToken TEXT)');
+      tx.executeSql('SELECT sessionToken FROM session WHERE id=1', null, async (_, resultSet) => {
+        if (!resultSet.rows.length > 0) {
+          props.navigation.navigate('Login');
+        }
+        else {
+          const firstSessionToken = resultSet.rows.item(0).sessionToken;
+          try {
+            const response = await fetch(`${apiurl}/users/${firstSessionToken}`);
+            if (!response.ok) {
+              throw new Error('Failed to fetch user data');
+            }
+            const userData = await response.json();
+            setUser(userData);
+          } catch (error) {
+            console.error(error);
+            Alert.alert('Error', 'Failed to fetch user data');
+          }
+          fetchUsers();
+        }
+      });
+    });
+  };
 
   const fetchUsers = async () => {
     try {
@@ -58,10 +86,10 @@ export default function ManageUserScreen(props) {
     }
   };
 
-  const tryDeleteName = (id) => {
+  const tryDeleteName = (id, userName) => {
     Alert.alert(
       'Confirmación',
-      '¿Estás seguro de que deseas eliminar a esta persona?',
+      `¿Estás seguro de que deseas eliminar al usuario ${userName}?`,
       [
         { text: 'Cancelar', style: 'cancel' },
         { text: 'Eliminar', onPress: () => deleteName(id) }
@@ -89,6 +117,7 @@ export default function ManageUserScreen(props) {
       setCurrentName(nameToUpdate.name);
       setShowAddButton(false);
       setCurrentId(id);
+      setEditingId(id); // Establecer el ID del nombre en edición
       return;
     }
 
@@ -105,6 +134,7 @@ export default function ManageUserScreen(props) {
       }
       setCurrentName('');
       setShowAddButton(true);
+      setEditingId(null); // Restablecer el ID del nombre en edición a null
       fetchUsers();
     } catch (error) {
       console.error(error);
@@ -116,13 +146,19 @@ export default function ManageUserScreen(props) {
       <View key={index} style={styles.row}>
         <Text style={styles.name}>{name.name}</Text>
         <View style={styles.buttonContainer}>
-        <TouchableOpacity style={styles.buttonCart} onPress={() => props.navigation.navigate('Board', { name: name })}>
+          <TouchableOpacity style={styles.buttonCart} onPress={() => props.navigation.navigate('BoardManage', { name: name, externalEmail: user.email })}>
             <FontAwesome name="cart-plus" size={20} color="white" />
           </TouchableOpacity>
-          <TouchableOpacity style={styles.button} onPress={() => updateName(name.id)}>
-            <FontAwesome name="edit" size={20} color="white" />
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.deleteButton} onPress={() => tryDeleteName(name.id)}>
+          {editingId === name.id ? ( // Mostrar solo el botón de edición si el nombre está en modo de edición
+            <TouchableOpacity style={styles.button} onPress={() => updateName(name.id)} disabled={editingId !== name.id}>
+              <FontAwesome name="edit" size={20} color="white" />
+            </TouchableOpacity>
+          ) : (
+            <TouchableOpacity style={[styles.button, { opacity: editingId ? 0.3 : 1 }]} onPress={() => updateName(name.id)} disabled={editingId !== null}>
+              <FontAwesome name="edit" size={20} color="white" />
+            </TouchableOpacity>
+          )}
+          <TouchableOpacity style={styles.deleteButton} onPress={() => tryDeleteName(name.id, name.name)} disabled={editingId !== null}>
             <FontAwesome name="trash" size={20} color="white" />
           </TouchableOpacity>
         </View>
@@ -140,11 +176,6 @@ export default function ManageUserScreen(props) {
             onChangeText={setCurrentName}
             style={styles.input}
           />
-          {showAddButton && (
-            <TouchableOpacity style={styles.addButton} onPress={addName}>
-              <AntDesign name="adduser" size={24} color="white" />
-            </TouchableOpacity>
-          )}
           {!showAddButton && currentId && (
             <TouchableOpacity
               style={styles.updateButtonUpper}
@@ -242,7 +273,7 @@ const styles = StyleSheet.create({
     marginRight: 10,
   },
   buttonCart: {
-    backgroundColor: '#4CAF50',
+    backgroundColor: '#e4a11b',
     padding: 10,
     borderRadius: 5,
     marginRight: 10,

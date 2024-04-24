@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { StyleSheet, View, TextInput, TouchableOpacity, Text, Alert, ScrollView, ImageBackground } from 'react-native';
-import { apiurl } from '../apiContext';
+import { apiurl, useDB } from '../apiContext';
 import backgroundImage from '../assets/background.png';
 import { useFocusEffect } from '@react-navigation/native';
 import { FontAwesome, MaterialIcons } from '@expo/vector-icons';
@@ -11,16 +11,32 @@ export default function ManageProductsScreen(props) {
   const [products, setProducts] = useState([]);
   const [showAddButton, setShowAddButton] = useState(true);
   const [currentProductId, setCurrentProductId] = useState(null);
+  const [editingProductId, setEditingProductId] = useState(null); // Estado para almacenar el ID del producto en edición
+  const db = useDB();
 
   useEffect(() => {
-    fetchProducts();
+    checkLogin()
   }, []);
 
   useFocusEffect(
     React.useCallback(() => {
-      fetchProducts();
+      checkLogin()
     }, [])
   );
+
+  const checkLogin = async () => {
+    db.transaction(tx => {
+      tx.executeSql('CREATE TABLE IF NOT EXISTS session (id INTEGER PRIMARY KEY, sessionToken TEXT)');
+      tx.executeSql('SELECT sessionToken FROM session WHERE id=1', null, async (_, resultSet) => {
+        if (!resultSet.rows.length > 0) {
+          props.navigation.navigate('Login');
+        }
+        else {
+          fetchProducts();
+        }
+      });
+    });
+  };
 
   const fetchProducts = async () => {
     try {
@@ -59,10 +75,10 @@ export default function ManageProductsScreen(props) {
     }
   };
 
-  const tryDeleteProduct = (id) => {
+  const tryDeleteProduct = (id, productName) => {
     Alert.alert(
       'Confirmación',
-      '¿Estás seguro de que deseas eliminar este producto?',
+      `¿Estás seguro de que deseas eliminar el producto ${productName}?`,
       [
         { text: 'Cancelar', style: 'cancel' },
         { text: 'Eliminar', onPress: () => deleteProduct(id) }
@@ -91,6 +107,7 @@ export default function ManageProductsScreen(props) {
       setCurrentProductPrice(productToUpdate.price.toString());
       setShowAddButton(false);
       setCurrentProductId(id);
+      setEditingProductId(id); // Establecer el ID del producto en edición
       return;
     }
     try {
@@ -107,6 +124,7 @@ export default function ManageProductsScreen(props) {
       setCurrentProductName('');
       setCurrentProductPrice('');
       setShowAddButton(true);
+      setEditingProductId(null); // Restablecer el ID del producto en edición a null
       fetchProducts();
     } catch (error) {
       console.error(error);
@@ -119,10 +137,16 @@ export default function ManageProductsScreen(props) {
         <Text style={styles.cell}>{product.name}</Text>
         <Text style={[styles.cell, styles.priceCell]}>{product.price.toFixed(2).replace('.', ',')} €</Text>
         <View style={styles.buttonContainer}>
-          <TouchableOpacity style={styles.button} onPress={() => updateProduct(product.id)}>
-            <FontAwesome name="edit" size={20} color="white" />
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.deleteButton} onPress={() => tryDeleteProduct(product.id)}>
+          {editingProductId === product.id ? ( // Mostrar solo el botón de edición si el producto está en modo de edición
+            <TouchableOpacity style={styles.button} onPress={() => updateProduct(product.id)}>
+              <FontAwesome name="edit" size={20} color="white" />
+            </TouchableOpacity>
+          ) : (
+            <TouchableOpacity style={[styles.button, { opacity: editingProductId ? 0.3 : 1 }]} onPress={() => updateProduct(product.id)} disabled={editingProductId !== null}>
+              <FontAwesome name="edit" size={20} color="white" />
+            </TouchableOpacity>
+          )}
+          <TouchableOpacity style={styles.deleteButton} onPress={() => tryDeleteProduct(product.id, product.name)} disabled={editingProductId !== null}>
             <FontAwesome name="trash" size={20} color="white" />
           </TouchableOpacity>
         </View>

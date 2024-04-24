@@ -1,32 +1,20 @@
-// components/UsersScreen.js
-
-import React, { useState, useEffect } from 'react';
-import { StyleSheet, View, TextInput, Button, TouchableOpacity, Text, ImageBackground, ScrollView, Platform } from 'react-native';
+import React, { useEffect } from 'react';
+import { useNavigation } from '@react-navigation/native';
+import { StyleSheet, View, Text, TextInput, TouchableOpacity, ImageBackground, Alert } from 'react-native';
 import { apiurl, useDB } from '../apiContext';
-import { useFocusEffect } from '@react-navigation/native';
 import backgroundImage from '../assets/background.png';
 
-export default function MainScreen(props) {
-
-  const [user, setUser] = useState(null);
-  const [sessionToken, setSessionToken] = useState(null);
-  
-  //const test = { id: 1, name: 'Usuario 1' };
-  const test = null;
-
-  const db = useDB();
+export default function LoginRedirect(props) {
+    const db = useDB();
 
   useEffect(() => {
     checkLogin()
   }, []);
 
-  useFocusEffect(() => {
-    checkLogin()
-  });
 
   const checkLogin = async () => {
     db.transaction(tx => {
-      tx.executeSql('CREATE TABLE IF NOT EXISTS session (id INTEGER PRIMARY KEY, sessionToken TEXT)');
+      tx.executeSql('CREATE TABLE IF NOT EXISTS session (id INTEGER PRIMARY KEY, sessionToken TEXT, email TEXT)');
       tx.executeSql('SELECT sessionToken FROM session WHERE id=1', null, async (_, resultSet) => {
         if (resultSet.rows.length > 0) {
           const firstSessionToken = resultSet.rows.item(0).sessionToken;
@@ -36,7 +24,6 @@ export default function MainScreen(props) {
               throw new Error('Failed to fetch user data');
             }
             const userData = await response.json();
-            setUser(userData);
             props.navigation.navigate('Board', { name: userData, externalEmail: userData.email });
           } catch (error) {
             console.error(error);

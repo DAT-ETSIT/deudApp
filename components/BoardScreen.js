@@ -1,31 +1,45 @@
 import React, { useState, useEffect } from 'react';
 import { StyleSheet, View, Text, ImageBackground, TouchableOpacity, FlatList, Image } from 'react-native';
 import backgroundImage from '../assets/background.png';
-import { apiurl } from '../apiContext';
+import { apiurl, useDB } from '../apiContext';
 import { useFocusEffect } from '@react-navigation/native';
 
-export default function ManageProductsScreen(props) {
+export default function BoardScreen(props) {
   const [products, setProducts] = useState([]);
   const [amount, setAmount] = useState([]);
   const userId = props.route.params.name.id;
   const userName = props.route.params.name.name;
+  const externalEmail = props.route.params.externalEmail || null;
+  const db = useDB();
+
 
   useEffect(() => {
-    fetch(`${apiurl}/products`)
-      .then(response => response.json())
-      .then(data => setProducts(data))
-      .catch(error => console.error('Error fetching products:', error));
-    
-    // Fetch amount from API
-    fetch(`${apiurl}/transactions/user/${userId}`)
-      .then(response => response.json())
-      .then(data => setAmount(data))
-      .catch(error => console.error('Error fetching transactions:', error));
+    checkLogin();
   }, []);
+  
 
   useFocusEffect(
     React.useCallback(() => {
-      fetch(`${apiurl}/products`)
+      checkLogin();
+    }, [])
+  );
+
+  const checkLogin = async () => {
+    db.transaction(tx => {
+      tx.executeSql('CREATE TABLE IF NOT EXISTS session (id INTEGER PRIMARY KEY, sessionToken TEXT)');
+      tx.executeSql('SELECT sessionToken FROM session WHERE id=1', null, async (_, resultSet) => {
+        if (!resultSet.rows.length > 0) {
+          props.navigation.navigate('Login');
+        }
+        else {
+          fetchData();
+        }
+      });
+    });
+  };
+
+  const fetchData = () => {
+    fetch(`${apiurl}/products`)
         .then(response => response.json())
         .then(data => setProducts(data))
         .catch(error => console.error('Error fetching products:', error));
@@ -35,8 +49,7 @@ export default function ManageProductsScreen(props) {
         .then(response => response.json())
         .then(data => setAmount(data))
         .catch(error => console.error('Error fetching transactions:', error));
-    }, [])
-  );
+  };
 
   const handleIncrement = (productId) => {
     addItem(productId, '+');
@@ -65,7 +78,7 @@ export default function ManageProductsScreen(props) {
         product: productId,
         date: currentDate,
         type,
-        generated_by: null
+        generated_by: externalEmail
       }),
     })
     .then(response => response.json())

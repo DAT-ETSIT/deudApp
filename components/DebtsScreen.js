@@ -1,28 +1,58 @@
-// components/ManageUserScreen.js
-
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, View, TextInput, Button, TouchableOpacity, Text, Alert, ImageBackground } from 'react-native';
+import { StyleSheet, View, TextInput, TouchableOpacity, Text, Alert, ImageBackground } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import backgroundImage from '../assets/background.png';
-import { apiurl } from '../apiContext';
+import backgroundNanoImage from '../assets/background-nano.png';
+import { apiurl, useDB } from '../apiContext';
 
 export default function DebtsScreen(props) {
   const [debtData, setDebtData] = useState([]);
   const [totalDebt, setTotalDebt] = useState(0);
   const [daysSinceLastReset, setDaysSinceLastReset] = useState(null);
   const [password, setPassword] = useState('');
+  const [clickCount, setClickCount] = useState(0);
+  const [lastClickTime, setLastClickTime] = useState(null);
+  const [backgroundImageSource, setBackgroundImageSource] = useState(backgroundImage);
+  const [isNanoBackground, setIsNanoBackground] = useState(false);
+  const [user, setUser] = useState(null);
+  const db = useDB();
 
   useEffect(() => {
-    fetchDebts();
-    calculateDaysSinceLastReset();
+    checkLogin();
   }, []);
 
   useFocusEffect(
     React.useCallback(() => {
-      fetchDebts();
-      calculateDaysSinceLastReset();
+      checkLogin();
     }, [])
   );
+
+  const checkLogin = async () => {
+    db.transaction(tx => {
+      tx.executeSql('CREATE TABLE IF NOT EXISTS session (id INTEGER PRIMARY KEY, sessionToken TEXT)');
+      tx.executeSql('SELECT sessionToken FROM session WHERE id=1', null, async (_, resultSet) => {
+        if (!resultSet.rows.length > 0) {
+          props.navigation.navigate('Login');
+        }
+        else {
+          const firstSessionToken = resultSet.rows.item(0).sessionToken;
+          try {
+            const response = await fetch(`${apiurl}/users/${firstSessionToken}`);
+            if (!response.ok) {
+              throw new Error('Failed to fetch user data');
+            }
+            const userData = await response.json();
+            setUser(userData);
+          } catch (error) {
+            console.error(error);
+            Alert.alert('Error', 'Failed to fetch user data');
+          }
+          fetchDebts();
+          calculateDaysSinceLastReset();
+        }
+      });
+    });
+  };
 
   const fetchDebts = () => {
     fetch(`${apiurl}/debts`)
@@ -35,10 +65,8 @@ export default function DebtsScreen(props) {
       })
       .catch(error => console.error('Error fetching debts:', error));
   };
-  
 
   const handleReset = () => {
-    // Mostrar una alerta para confirmar el reset
     Alert.alert(
       'Confirmación',
       '¿Estás seguro de que quieres realizar el reset?',
@@ -57,15 +85,19 @@ export default function DebtsScreen(props) {
   };
 
   const performReset = () => {
-    // Comprobar si la contraseña es correcta
     if (password.trim() !== 'perico321') {
       Alert.alert('Error', 'Contraseña incorrecta.');
       return;
     }
 
-    // Realizar el reset si la contraseña es correcta
     fetch(`${apiurl}/resets`, {
       method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        generated_by: user.email
+      }),
     })
       .then(response => {
         if (response.ok) {
@@ -115,41 +147,108 @@ export default function DebtsScreen(props) {
       .catch(error => console.error('Error fetching last reset:', error));
   };
 
+  const handleBackgroundPress = () => {
+    const currentTime = new Date().getTime();
+    const timeDiff = currentTime - lastClickTime;
+
+    if (timeDiff > 300) {
+      setClickCount(1);
+    } else {
+      setClickCount(prevCount => prevCount + 1);
+    }
+
+    setLastClickTime(currentTime);
+
+    if (clickCount >= 4 && !isNanoBackground) {
+      setBackgroundImageSource(backgroundNanoImage);
+      setIsNanoBackground(true);
+      setClickCount(0);
+    } else if (clickCount >= 4 && isNanoBackground) {
+      setBackgroundImageSource(backgroundImage);
+      setIsNanoBackground(false);
+      setClickCount(0);
+    }
+  };
+
+  const closeSession = () => {
+    Alert.alert(
+      'Cerrar sesión',
+      '¿Estás seguro de que deseas cerrar la sesión?',
+      [
+        {
+          text: 'Cancelar',
+          style: 'cancel'
+        },
+        {
+          text: 'Cerrar sesión',
+          onPress: () => {
+            db.transaction(tx => {
+              tx.executeSql('DELETE FROM session WHERE id=1');
+            });
+            props.navigation.navigate('Home', { asd: 'asd' });
+          }
+        }
+      ],
+      { cancelable: false }
+    );
+  };
+
   return (
-    <ImageBackground source={backgroundImage} style={styles.background}>
-      <View style={styles.container}>
-        <Text style={styles.daysSinceReset}>
-          {daysSinceLastReset !== null ? `${daysSinceLastReset} días desde el último reset` : '0 días desde el último reset'}
-        </Text>
-        <View style={styles.resetContainer}>
-          <TextInput
-            style={styles.passwordInput}
-            value={password}
-            onChangeText={setPassword}
-            placeholder="Contraseña"
-            secureTextEntry
-          />
-          <TouchableOpacity style={styles.resetButton} onPress={handleReset}>
-            <Text style={styles.resetButtonText}>Reset</Text>
+    <TouchableOpacity style={styles.background} onPress={handleBackgroundPress} activeOpacity={1}>
+      <ImageBackground source={backgroundImageSource} style={styles.backgroundImage}>
+        <View style={styles.container}>
+          <Text style={styles.daysSinceReset}>
+            {daysSinceLastReset !== null ? `${daysSinceLastReset} días desde el último reset` : '0 días desde el último reset'}
+          </Text>
+          <View style={styles.resetContainer}>
+            <TextInput
+              style={styles.passwordInput}
+              value={password}
+              onChangeText={setPassword}
+              placeholder="Contraseña"
+              secureTextEntry
+            />
+            <TouchableOpacity style={styles.resetButton} onPress={handleReset}>
+              <Text style={styles.resetButtonText}>Reset</Text>
+            </TouchableOpacity>
+          </View>
+          <Text style={styles.header}>Usuarios y Deudas:</Text>
+          {debtData.map((item, index) => (
+            <View key={index} style={styles.item}>
+              <Text style={styles.userName}>{item.User}</Text>
+              <Text style={styles.debtAmount}>{item.debt.toFixed(2).replace('.', ',')} €</Text>
+            </View>
+          ))}
+          <View style={styles.item}>
+            <Text style={styles.totalLabel}>Total:</Text>
+            <Text style={styles.totalLabel}>{totalDebt.toFixed(2).replace('.', ',')} €</Text>
+          </View>
+        </View>
+        {isNanoBackground && (
+          <View style={styles.textContainer}>
+            <Text style={styles.names}>© Álvaro Rosado & Pablo Fernández</Text>
+          </View>
+        )}
+        <View style={styles.logoutButtonContainer}>
+          <TouchableOpacity style={styles.logoutButton} onPress={closeSession}>
+            <Text style={styles.logoutButtonText}>Cerrar Sesión</Text>
           </TouchableOpacity>
         </View>
-        <Text style={styles.header}>Usuarios y Deudas:</Text>
-        {debtData.map((item, index) => (
-          <View key={index} style={styles.item}>
-            <Text style={styles.userName}>{item.User}</Text>
-            <Text style={styles.debtAmount}>{item.debt.toFixed(2).replace('.', ',')} €</Text>
-          </View>
-        ))}
-        <View style={styles.item}>
-          <Text style={styles.totalLabel}>Total:</Text>
-          <Text style={styles.totalLabel}>{totalDebt.toFixed(2).replace('.', ',')} €</Text>
-        </View>
-      </View>
-    </ImageBackground>
+      </ImageBackground>
+    </TouchableOpacity>
   );
 }
 
 const styles = StyleSheet.create({
+  background: {
+    flex: 1,
+  },
+  backgroundImage: {
+    flex: 1,
+    resizeMode: 'cover',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   container: {
     flex: 1,
     alignItems: 'center',
@@ -192,12 +291,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
   },
-  background: {
-    flex: 1,
-    resizeMode: 'cover',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   passwordInput: {
     flex: 1,
     height: 40,
@@ -213,6 +306,31 @@ const styles = StyleSheet.create({
     borderRadius: 5,
   },
   resetButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  textContainer: {
+    position: 'absolute',
+    bottom: 10,
+    right: 10,
+    padding: 10,
+  },
+  names: {
+    fontSize: 14,
+    textAlign: 'right',
+  },
+  logoutButtonContainer: {
+    position: 'absolute',
+    bottom: 10,
+    left: 10,
+  },
+  logoutButton: {
+    backgroundColor: 'red',
+    padding: 10,
+    borderRadius: 5,
+  },
+  logoutButtonText: {
     color: 'white',
     fontSize: 16,
     fontWeight: 'bold',
