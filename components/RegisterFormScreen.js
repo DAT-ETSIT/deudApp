@@ -12,40 +12,43 @@ export default function RegisterFormScreen(props) {
 
   const handleRegister = async () => {
     if (!name || !email || !password) {
-      Alert.alert('Error', 'Por favor, completa todos los campos.');
-      return;
+        Alert.alert('Error', 'Por favor, completa todos los campos.');
+        return;
     }
 
     const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailPattern.test(email)) {
-      Alert.alert('Error', 'Por favor, introduce un email válido.');
-      return;
+        Alert.alert('Error', 'Por favor, introduce un email válido.');
+        return;
     }
-  
-    try {
-      const response = await fetch(`${apiurl}/users`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ name, email, password }),
-      });
-      if (!response.ok) {
-        throw new Error('Failed to create user');
-      }
 
-      setName('');
-      setEmail('');
-      setPassword('');
-      props.navigation.goBack();
-  
-      Alert.alert('Registro exitoso', 'Verifica tu email para activar tu cuenta.');
-  
+    try {
+        const response = await fetch(`${apiurl}/users`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ name, email, password }),
+        });
+
+        const responseData = await response.json();
+
+        if (!response.ok) {
+            throw new Error(responseData.message || 'Failed to create user');
+        }
+
+        setName('');
+        setEmail('');
+        setPassword('');
+        props.navigation.goBack();
+
+        Alert.alert('Éxito', 'Verifica tu email para activar tu cuenta.');
+
     } catch (error) {
-      console.error(error);
-      Alert.alert('Error', 'Ha ocurrido un error al registrar el usuario. Por favor, inténtalo de nuevo.');
+        console.error(error);
+        Alert.alert('Error', error.message || 'Ha ocurrido un error al registrar el usuario. Por favor, inténtalo de nuevo.');
     }
-  };
+};
 
   const handleBack = () => {
     props.navigation.goBack();

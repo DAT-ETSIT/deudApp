@@ -13,39 +13,44 @@ export default function LoginFormScreen(props) {
 
   const handleLogin = async () => {
     try {
-      const response = await fetch(`${apiurl}/users/login`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email, password }),
-      });
-      
-      if (!response.ok) {
-        throw new Error('Failed to login');
-      }
-      const responseData = await response.json();
-      const token = responseData.sessionToken;
-      
+        const response = await fetch(`${apiurl}/users/login`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ email, password }),
+        });
 
-      db.transaction(tx => {
-        tx.executeSql('CREATE TABLE IF NOT EXISTS session (id INTEGER PRIMARY KEY, sessionToken TEXT)');
-        tx.executeSql(
-          'INSERT OR REPLACE INTO session (id, sessionToken) VALUES (?, ?)',
-          [1, token],
-          (_, result) => {
-          }
-        );
-      });
+        const responseData = await response.json();
 
-      Alert.alert('Inicio de sesión exitoso', '¡Bienvenido de nuevo!');
-      
+        if (!response.ok) {
+            if (responseData && responseData.message) {
+                throw new Error(responseData.message);
+            } else {
+                throw new Error('Failed to login');
+            }
+        }
+
+        const token = responseData.sessionToken;
+
+        db.transaction(tx => {
+            tx.executeSql('CREATE TABLE IF NOT EXISTS session (id INTEGER PRIMARY KEY, sessionToken TEXT)');
+            tx.executeSql(
+                'INSERT OR REPLACE INTO session (id, sessionToken) VALUES (?, ?)',
+                [1, token],
+                (_, result) => {
+                }
+            );
+        });
+
+        Alert.alert('Éxito', '¡Bienvenido de nuevo!');
+
     } catch (error) {
-      console.error(error);
-      Alert.alert('Error', 'Ha ocurrido un error al iniciar sesión. Por favor, inténtalo de nuevo.');
+        console.error(error);
+        Alert.alert('Error', error.message || 'Ha ocurrido un error al iniciar sesión. Por favor, inténtalo de nuevo.');
     }
     props.navigation.navigate('Redirect');
-  };
+};
 
   const handleRegister = () => {
     props.navigation.navigate('Register');

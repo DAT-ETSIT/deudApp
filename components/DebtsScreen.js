@@ -3,7 +3,7 @@ import { StyleSheet, View, TextInput, TouchableOpacity, Text, Alert, ImageBackgr
 import { useFocusEffect } from '@react-navigation/native';
 import backgroundImage from '../assets/background.png';
 import backgroundNanoImage from '../assets/background-nano.png';
-import { apiurl, useDB } from '../apiContext';
+import { apiurl, useDB, getSessionToken } from '../apiContext';
 
 export default function DebtsScreen(props) {
   const [debtData, setDebtData] = useState([]);
@@ -16,10 +16,24 @@ export default function DebtsScreen(props) {
   const [isNanoBackground, setIsNanoBackground] = useState(false);
   const [user, setUser] = useState(null);
   const db = useDB();
+  const [token, setToken] = useState(null);
+
+  useEffect(() => {
+    const fetchToken = async () => {
+      try {
+        const sessionToken = await getSessionToken();
+        setToken(sessionToken);
+      } catch (error) {
+        console.error('Error al obtener el token de sesión:', error);
+      }
+    };
+
+    fetchToken();
+  }, []);
 
   useEffect(() => {
     checkLogin();
-  }, []);
+  }, [token]);
 
   useFocusEffect(
     React.useCallback(() => {
@@ -47,23 +61,28 @@ export default function DebtsScreen(props) {
             console.error(error);
             Alert.alert('Error', 'Failed to fetch user data');
           }
-          fetchDebts();
-          calculateDaysSinceLastReset();
+          fetchDebts(resultSet.rows.item(0).sessionToken);
+          calculateDaysSinceLastReset(resultSet.rows.item(0).sessionToken);
         }
       });
     });
   };
 
-  const fetchDebts = () => {
-    fetch(`${apiurl}/debts`)
-      .then(response => response.json())
-      .then(data => {
-        const filteredData = data.filter(item => item.User !== null);
-        setDebtData(filteredData);
-        const total = filteredData.reduce((acc, curr) => acc + curr.debt, 0);
-        setTotalDebt(total);
-      })
-      .catch(error => console.error('Error fetching debts:', error));
+  const fetchDebts = (token) => {
+    fetch(`${apiurl}/debts`, {
+      headers: {
+        'Authorization': `${token}`,
+        'Content-Type': 'application/json',
+      },
+    })
+    .then(response => response.json())
+    .then(data => {
+      const filteredData = data.filter(item => item.User !== null);
+      setDebtData(filteredData);
+      const total = filteredData.reduce((acc, curr) => acc + curr.debt, 0);
+      setTotalDebt(total);
+    })
+    .catch(error => console.error('Error fetching debts:', error));
   };
 
   const handleReset = () => {
@@ -93,59 +112,66 @@ export default function DebtsScreen(props) {
     fetch(`${apiurl}/resets`, {
       method: 'POST',
       headers: {
+        'Authorization': `${token}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
         generated_by: user.email
       }),
     })
-      .then(response => {
-        if (response.ok) {
-          console.log('Reset realizado correctamente.');
-          setPassword('');
-          fetchDebts();
-          calculateDaysSinceLastReset();
-        } else {
-          console.error('Error al realizar el reset.');
-        }
-      })
-      .catch(error => console.error('Error al realizar el reset:', error));
+    .then(response => {
+      if (response.ok) {
+        console.log('Reset realizado correctamente.');
+        setPassword('');
+        fetchDebts(token);
+        calculateDaysSinceLastReset(token);
+      } else {
+        console.error('Error al realizar el reset.');
+      }
+    })
+    .catch(error => console.error('Error al realizar el reset:', error));
   };
 
-  const calculateDaysSinceLastReset = () => {
-    fetch(`${apiurl}/resets`)
-      .then(response => response.json())
-      .then(data => {
-        if (data) {
-          const lastResetStr = data.date;
-          const currentDateStr = new Date().toISOString().replace(/\D/g, '');
-          const currentDate = new Date(
-            parseInt(currentDateStr.substring(0, 4)),
-            parseInt(currentDateStr.substring(4, 6)) - 1,
-            parseInt(currentDateStr.substring(6, 8)),
-            parseInt(currentDateStr.substring(8, 10)),
-            parseInt(currentDateStr.substring(10, 12)),
-            parseInt(currentDateStr.substring(12, 14)),
-            parseInt(currentDateStr.substring(14))
-          );
-    
-          const lastResetDate = new Date(
-            parseInt(lastResetStr.substring(0, 4)),
-            parseInt(lastResetStr.substring(4, 6)) - 1,
-            parseInt(lastResetStr.substring(6, 8)),
-            parseInt(lastResetStr.substring(8, 10)),
-            parseInt(lastResetStr.substring(10, 12)),
-            parseInt(lastResetStr.substring(12, 14)),
-            parseInt(lastResetStr.substring(14))
-          );
-    
-          const differenceInMilliseconds = currentDate - lastResetDate;
-          const differenceInDays = Math.floor(differenceInMilliseconds / (1000 * 3600 * 24));
-          setDaysSinceLastReset(differenceInDays);
-        }
-      })
-      .catch(error => console.error('Error fetching last reset:', error));
+  const calculateDaysSinceLastReset = (token) => {
+    fetch(`${apiurl}/resets`, {
+      headers: {
+        'Authorization': `${token}`,
+        'Content-Type': 'application/json',
+      },
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data) {
+        const lastResetStr = data.date;
+        const currentDateStr = new Date().toISOString().replace(/\D/g, '');
+        const currentDate = new Date(
+          parseInt(currentDateStr.substring(0, 4)),
+          parseInt(currentDateStr.substring(4, 6)) - 1,
+          parseInt(currentDateStr.substring(6, 8)),
+          parseInt(currentDateStr.substring(8, 10)),
+          parseInt(currentDateStr.substring(10, 12)),
+          parseInt(currentDateStr.substring(12, 14)),
+          parseInt(currentDateStr.substring(14))
+        );
+  
+        const lastResetDate = new Date(
+          parseInt(lastResetStr.substring(0, 4)),
+          parseInt(lastResetStr.substring(4, 6)) - 1,
+          parseInt(lastResetStr.substring(6, 8)),
+          parseInt(lastResetStr.substring(8, 10)),
+          parseInt(lastResetStr.substring(10, 12)),
+          parseInt(lastResetStr.substring(12, 14)),
+          parseInt(lastResetStr.substring(14))
+        );
+  
+        const differenceInMilliseconds = currentDate - lastResetDate;
+        const differenceInDays = Math.floor(differenceInMilliseconds / (1000 * 3600 * 24));
+        setDaysSinceLastReset(differenceInDays);
+      }
+    })
+    .catch(error => console.error('Error fetching last reset:', error));
   };
+  
 
   const handleBackgroundPress = () => {
     const currentTime = new Date().getTime();
@@ -216,12 +242,12 @@ export default function DebtsScreen(props) {
           {debtData.map((item, index) => (
             <View key={index} style={styles.item}>
               <Text style={styles.userName}>{item.User}</Text>
-              <Text style={styles.debtAmount}>{item.debt.toFixed(2).replace('.', ',')} €</Text>
+              <Text style={styles.debtAmount}>{item?.debt?.toFixed(2).replace('.', ',')} €</Text>
             </View>
           ))}
           <View style={styles.item}>
             <Text style={styles.totalLabel}>Total:</Text>
-            <Text style={styles.totalLabel}>{totalDebt.toFixed(2).replace('.', ',')} €</Text>
+            <Text style={styles.totalLabel}>{totalDebt?.toFixed(2).replace('.', ',')} €</Text>
           </View>
         </View>
         {isNanoBackground && (

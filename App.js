@@ -28,16 +28,6 @@ const HomeStack = () => (
       options={{ title: 'Inicio', headerShown: false }}
     />
     <Stack.Screen
-      name="Login"
-      component={LoginFormScreen}
-      options={{ title: 'Login', headerShown: false }}
-    />
-    <Stack.Screen
-      name="Register"
-      component={RegisterScreen}
-      options={{ title: 'Register', headerShown: false }}
-    />
-    <Stack.Screen
       name="Board"
       component={BoardScreen}
       options={{ title: 'Añadir Productos', headerShown: false}}
@@ -69,39 +59,59 @@ export default function App() {
   return (
     <DBProvider>
       <NavigationContainer>
-        <Tab.Navigator
-          screenOptions={({ route, navigation }) => ({
-            tabBarActiveTintColor: 'tomato',
-            tabBarInactiveTintColor: 'gray',
-            tabBarStyle: {
-              display: 'flex',
-              paddingBottom: 5,
-              paddingTop: 5
-            },
-            tabBarIcon: ({ focused, color, size }) => {
-              let iconName;
-
-              if (route.name === 'Home') {
-                iconName = focused ? 'home' : 'home-outline';
-              } else if (route.name === 'Users') {
-                iconName = focused ? 'people' : 'people-outline';
-              } else if (route.name === 'Products') {
-                iconName = focused ? 'cube' : 'cube-outline';
-              } else if (route.name === 'Debts') {
-                iconName = focused ? 'cash' : 'cash-outline';
-              }
-
-              return <Ionicons name={iconName} size={size} color={color} />;
-            },
-          })}
-        >
-          <Tab.Screen name="Home" component={HomeStack} options={{ title: 'Inicio' }} />
-          <Tab.Screen name="Users" component={ManageUserStack} options={{ title: 'Usuarios' }} />
-          <Tab.Screen name="Products" component={ManageProductsScreen} options={{ title: 'Productos' }} />
-          <Tab.Screen name="Debts" component={DebtsScreen} options={{ title: 'Deudas' }} />
-        </Tab.Navigator>
-        <StatusBar style="auto" />
+        <Stack.Navigator headerShown="false">
+          <Stack.Screen
+            name="MainTabs"
+            component={MainTabs}
+            options={{ headerShown: false }}
+          />
+          <Stack.Screen
+            name="Login"
+            component={LoginFormScreen}
+            options={{ title: 'Login', headerShown: false }}
+          />
+          <Stack.Screen
+            name="Register"
+            component={RegisterScreen}
+            options={{ title: 'Register', headerShown: false }}
+          />
+        </Stack.Navigator>
       </NavigationContainer>
+      <StatusBar style="auto" />
     </DBProvider>
   );
 }
+
+const MainTabs = () => (
+  <Tab.Navigator
+    screenOptions={({ route, navigation }) => ({
+      tabBarActiveTintColor: 'tomato',
+      tabBarInactiveTintColor: 'gray',
+      tabBarStyle: {
+        display: 'flex',
+        paddingBottom: 5,
+        paddingTop: 5
+      },
+      tabBarIcon: ({ focused, color, size }) => {
+        let iconName;
+
+        if (route.name === 'Home') {
+          iconName = focused ? 'home' : 'home-outline';
+        } else if (route.name === 'Users') {
+          iconName = focused ? 'people' : 'people-outline';
+        } else if (route.name === 'Products') {
+          iconName = focused ? 'cube' : 'cube-outline';
+        } else if (route.name === 'Debts') {
+          iconName = focused ? 'cash' : 'cash-outline';
+        }
+
+        return <Ionicons name={iconName} size={size} color={color} />;
+      },
+    })}
+  >
+    <Tab.Screen name="Home" component={HomeStack} options={{ title: 'Inicio' }} />
+    <Tab.Screen name="Users" component={ManageUserStack} options={{ title: 'Usuarios' }} />
+    <Tab.Screen name="Products" component={ManageProductsScreen} options={{ title: 'Productos' }} />
+    <Tab.Screen name="Debts" component={DebtsScreen} options={{ title: 'Deudas' }} />
+  </Tab.Navigator>
+);

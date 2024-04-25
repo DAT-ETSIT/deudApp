@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { StyleSheet, View, TextInput, TouchableOpacity, Text, Alert, ScrollView, ImageBackground } from 'react-native';
-import { apiurl, useDB } from '../apiContext';
+import { apiurl, useDB, getSessionToken } from '../apiContext';
 import backgroundImage from '../assets/background.png';
 import { useFocusEffect } from '@react-navigation/native';
 import { FontAwesome, AntDesign } from '@expo/vector-icons';
@@ -13,10 +13,24 @@ export default function ManageUserScreen(props) {
   const [editingId, setEditingId] = useState(null);
   const [user, setUser] = useState(null);
   const db = useDB();
+  const [token, setToken] = useState(null);
+
+  useEffect(() => {
+    const fetchToken = async () => {
+      try {
+        const sessionToken = await getSessionToken();
+        setToken(sessionToken);
+      } catch (error) {
+        console.error('Error al obtener el token de sesión:', error);
+      }
+    };
+
+    fetchToken();
+  }, []);
 
   useEffect(() => {
     checkLogin();
-  }, []);
+  }, [token]);
 
   useFocusEffect(
     React.useCallback(() => {
@@ -44,43 +58,25 @@ export default function ManageUserScreen(props) {
             console.error(error);
             Alert.alert('Error', 'Failed to fetch user data');
           }
-          fetchUsers();
+          fetchUsers(firstSessionToken);
         }
       });
     });
   };
 
-  const fetchUsers = async () => {
+  const fetchUsers = async (token) => {
     try {
-      const response = await fetch(`${apiurl}/users`);
+      const response = await fetch(`${apiurl}/users`, {
+        headers: {
+          'Authorization': `${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
       if (!response.ok) {
         throw new Error('Failed to fetch users');
       }
       const data = await response.json();
       setNames(data);
-    } catch (error) {
-      console.error(error);
-    }
-  };
-
-  const addName = async () => {
-    if (!currentName.trim()) {
-      Alert.alert('Error', 'Por favor, completa todos los campos.');
-      return;
-    }
-    try {
-      const response = await fetch(`${apiurl}/users`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ name: currentName }),
-      });
-      if (!response.ok) {
-        throw new Error('Failed to create user');
-      }
-      setCurrentName('');
-      fetchUsers();
     } catch (error) {
       console.error(error);
     }
@@ -101,15 +97,28 @@ export default function ManageUserScreen(props) {
     try {
       const response = await fetch(`${apiurl}/users/${id}`, {
         method: 'DELETE',
+        headers: {
+          'Authorization': `${token}`,
+          'Content-Type': 'application/json',
+        },
       });
       if (!response.ok) {
-        throw new Error('Failed to delete user');
+        const responseData = await response.json();
+        throw new Error(responseData.message || 'Failed to delete user');
       }
-      fetchUsers();
+      if (id === user.id) {
+        db.transaction(tx => {
+          tx.executeSql('DELETE FROM session WHERE id=1');
+        });
+        props.navigation.navigate('Home', { asd: 'asd' });
+      } else {
+        fetchUsers(token);
+      }
     } catch (error) {
-      console.error(error);
+      Alert.alert('Error', error.message || 'Ha ocurrido un error al eliminar el usuario. Por favor, inténtalo de nuevo.');
     }
   };
+  
 
   const updateName = async (id) => {
     if (!currentName.trim()) {
@@ -117,27 +126,31 @@ export default function ManageUserScreen(props) {
       setCurrentName(nameToUpdate.name);
       setShowAddButton(false);
       setCurrentId(id);
-      setEditingId(id); // Establecer el ID del nombre en edición
+      setEditingId(id);
       return;
     }
-
+  
     try {
       const response = await fetch(`${apiurl}/users/${id}`, {
         method: 'PUT',
         headers: {
+          'Authorization': `${token}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ name: currentName }),
       });
+  
       if (!response.ok) {
-        throw new Error('Failed to update user');
+        const responseData = await response.json();
+        throw new Error(responseData.message || 'Failed to update user');
       }
+  
       setCurrentName('');
       setShowAddButton(true);
-      setEditingId(null); // Restablecer el ID del nombre en edición a null
-      fetchUsers();
+      setEditingId(null);
+      fetchUsers(token);
     } catch (error) {
-      console.error(error);
+      Alert.alert('Error', error.message || 'Ha ocurrido un error al actualizar el usuario. Por favor, inténtalo de nuevo.');
     }
   };
 

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { StyleSheet, View, TextInput, TouchableOpacity, Text, Alert, ScrollView, ImageBackground } from 'react-native';
-import { apiurl, useDB } from '../apiContext';
+import { apiurl, useDB, getSessionToken } from '../apiContext';
 import backgroundImage from '../assets/background.png';
 import { useFocusEffect } from '@react-navigation/native';
 import { FontAwesome, MaterialIcons } from '@expo/vector-icons';
@@ -14,14 +14,28 @@ export default function ManageProductsScreen(props) {
   const [editingProductId, setEditingProductId] = useState(null);
   const [currentProductUrl, setCurrentProductUrl] = useState('');
   const db = useDB();
+  const [token, setToken] = useState(null);
 
   useEffect(() => {
-    checkLogin()
+    const fetchToken = async () => {
+      try {
+        const sessionToken = await getSessionToken();
+        setToken(sessionToken);
+      } catch (error) {
+        console.error('Error al obtener el token de sesión:', error);
+      }
+    };
+
+    fetchToken();
   }, []);
+
+  useEffect(() => {
+    checkLogin();
+  }, [token]);
 
   useFocusEffect(
     React.useCallback(() => {
-      checkLogin()
+      checkLogin();
     }, [])
   );
 
@@ -33,15 +47,20 @@ export default function ManageProductsScreen(props) {
           props.navigation.navigate('Login');
         }
         else {
-          fetchProducts();
+          fetchProducts(resultSet.rows.item(0).sessionToken);
         }
       });
     });
   };
 
-  const fetchProducts = async () => {
+  const fetchProducts = async (token) => {
     try {
-      const response = await fetch(`${apiurl}/products`);
+      const response = await fetch(`${apiurl}/products`, {
+        headers: {
+          'Authorization': `${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
       if (!response.ok) {
         throw new Error('Failed to fetch products');
       }
@@ -51,6 +70,7 @@ export default function ManageProductsScreen(props) {
       console.error(error);
     }
   };
+  
 
   const addProduct = async () => {
     if (!currentProductName.trim() || !currentProductPrice.trim()) {
@@ -61,20 +81,26 @@ export default function ManageProductsScreen(props) {
       const response = await fetch(`${apiurl}/products`, {
         method: 'POST',
         headers: {
+          'Authorization': `${token}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ name: currentProductName, price: parseFloat(currentProductPrice.replace(',', '.')), photoUrl: currentProductUrl}),
+        body: JSON.stringify({ name: currentProductName, price: parseFloat(currentProductPrice.replace(',', '.')), photoUrl: currentProductUrl }),
       });
+      const responseData = await response.json();
+  
       if (!response.ok) {
-        throw new Error('Failed to add product');
+        throw new Error(responseData.message || 'Failed to add product');
       }
+  
       setCurrentProductName('');
       setCurrentProductPrice('');
-      fetchProducts();
+      fetchProducts(token);
     } catch (error) {
-      console.error(error);
+      Alert.alert('Error', error.message || 'Ha ocurrido un error al agregar el producto. Por favor, inténtalo de nuevo.');
     }
   };
+  
+
 
   const tryDeleteProduct = (id, productName) => {
     Alert.alert(
@@ -91,15 +117,20 @@ export default function ManageProductsScreen(props) {
     try {
       const response = await fetch(`${apiurl}/products/${id}`, {
         method: 'DELETE',
+        headers: {
+          'Authorization': `${token}`,
+        },
       });
       if (!response.ok) {
-        throw new Error('Failed to delete product');
+        const responseData = await response.json();
+        throw new Error(responseData.message || 'Failed to delete product');
       }
-      fetchProducts();
+      fetchProducts(token);
     } catch (error) {
-      console.error(error);
+      Alert.alert('Error', error.message || 'Ha ocurrido un error al eliminar el producto. Por favor, inténtalo de nuevo.');
     }
   };
+  
 
   const updateProduct = async (id) => {
     if (!currentProductName.trim() || !currentProductPrice.trim()) {
@@ -117,22 +148,26 @@ export default function ManageProductsScreen(props) {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `${token}`,
         },
-        body: JSON.stringify({ name: currentProductName, price: parseFloat(currentProductPrice.replace(',', '.')), photoUrl: currentProductUrl}),
+        body: JSON.stringify({ name: currentProductName, price: parseFloat(currentProductPrice.replace(',', '.')), photoUrl: currentProductUrl }),
       });
+  
       if (!response.ok) {
-        throw new Error('Failed to update product');
+        const responseData = await response.json();
+        throw new Error(responseData.message || 'Failed to update product');
       }
       setCurrentProductName('');
       setCurrentProductPrice('');
       setCurrentProductUrl('');
       setShowAddButton(true);
-      setEditingProductId(null); // Restablecer el ID del producto en edición a null
-      fetchProducts();
+      setEditingProductId(null);
+      fetchProducts(token);
     } catch (error) {
-      console.error(error);
+      Alert.alert('Error', error.message || 'Ha ocurrido un error al actualizar el producto. Por favor, inténtalo de nuevo.');
     }
   };
+  
 
   const showProducts = () => {
     return products.map((product, index) => (

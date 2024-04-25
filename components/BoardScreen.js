@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { StyleSheet, View, Text, ImageBackground, TouchableOpacity, FlatList, Image } from 'react-native';
 import backgroundImage from '../assets/background.png';
-import { apiurl, useDB } from '../apiContext';
+import { apiurl, useDB, getSessionToken } from '../apiContext';
 import { useFocusEffect } from '@react-navigation/native';
 
 export default function BoardScreen(props) {
@@ -11,12 +11,25 @@ export default function BoardScreen(props) {
   const userName = props.route.params.name.name;
   const externalEmail = props.route.params.externalEmail || null;
   const db = useDB();
+  const [token, setToken] = useState(null);
 
 
   useEffect(() => {
-    checkLogin();
+    const fetchToken = async () => {
+      try {
+        const sessionToken = await getSessionToken();
+        setToken(sessionToken);
+      } catch (error) {
+        console.error('Error al obtener el token de sesión:', error);
+      }
+    };
+
+    fetchToken();
   }, []);
-  
+
+  useEffect(() => {
+    checkLogin();
+  }, [token]);
 
   useFocusEffect(
     React.useCallback(() => {
@@ -32,23 +45,34 @@ export default function BoardScreen(props) {
           props.navigation.navigate('Login');
         }
         else {
-          fetchData();
+          fetchData(resultSet.rows.item(0).sessionToken);
         }
       });
     });
   };
 
-  const fetchData = () => {
-    fetch(`${apiurl}/products`)
-        .then(response => response.json())
-        .then(data => setProducts(data))
-        .catch(error => console.error('Error fetching products:', error));
-      
-      // Fetch amount from API
-      fetch(`${apiurl}/transactions/user/${userId}`)
-        .then(response => response.json())
-        .then(data => setAmount(data))
-        .catch(error => console.error('Error fetching transactions:', error));
+  const fetchData = (token) => {
+    // Fetch products with token in header
+    fetch(`${apiurl}/products`, {
+      headers: {
+        'Authorization': `${token}`,
+        'Content-Type': 'application/json',
+      },
+    })
+    .then(response => response.json())
+    .then(data => setProducts(data))
+    .catch(error => console.error('Error fetching products:', error));
+
+    // Fetch amount from API with token in header
+    fetch(`${apiurl}/transactions/user/${userId}`, {
+      headers: {
+        'Authorization': `${token}`,
+        'Content-Type': 'application/json',
+      },
+    })
+    .then(response => response.json())
+    .then(data => setAmount(data))
+    .catch(error => console.error('Error fetching transactions:', error));
   };
 
   const handleIncrement = (productId) => {
@@ -66,11 +90,12 @@ export default function BoardScreen(props) {
     if (type === '-' && ((amount.find(item => item.id === productId)?.count === 0) || !amount.some(item => item.id === productId))) {
       return;
     }
-
+    
     // Create a new transaction
     fetch(`${apiurl}/transactions`, {
       method: 'POST',
       headers: {
+        'Authorization': `${token}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
