@@ -33,6 +33,6 @@ export const getSessionToken = async () => {
   });
 };
 
-const apiurl = 'http://192.168.1.21:3000'
+const apiurl = 'https://deu.dat.etsit.upm.es/api'
 
 export {apiurl}

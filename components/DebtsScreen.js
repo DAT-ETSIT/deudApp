@@ -121,7 +121,6 @@ export default function DebtsScreen(props) {
     })
     .then(response => {
       if (response.ok) {
-        console.log('Reset realizado correctamente.');
         setPassword('');
         fetchDebts(token);
         calculateDaysSinceLastReset(token);
@@ -242,12 +241,12 @@ export default function DebtsScreen(props) {
           {debtData.map((item, index) => (
             <View key={index} style={styles.item}>
               <Text style={styles.userName}>{item.User}</Text>
-              <Text style={styles.debtAmount}>{item?.debt?.toFixed(2).replace('.', ',')} €</Text>
+              <Text style={styles.debtAmount}>{parseFloat(item?.debt).toFixed(2).replace('.', ',')} €</Text>
             </View>
           ))}
           <View style={styles.item}>
             <Text style={styles.totalLabel}>Total:</Text>
-            <Text style={styles.totalLabel}>{totalDebt?.toFixed(2).replace('.', ',')} €</Text>
+            <Text style={styles.totalLabel}>{parseFloat(totalDebt)?.toFixed(2).replace('.', ',')} €</Text>
           </View>
         </View>
         {isNanoBackground && (

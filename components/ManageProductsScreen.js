@@ -173,7 +173,7 @@ export default function ManageProductsScreen(props) {
     return products.map((product, index) => (
       <View key={index} style={styles.row}>
         <Text style={styles.cell}>{product.name}</Text>
-        <Text style={[styles.cell, styles.priceCell]}>{product.price.toFixed(2).replace('.', ',')} €</Text>
+        <Text style={[styles.cell, styles.priceCell]}>{parseFloat(product?.price)?.toFixed(2).replace('.', ',')} €</Text>
         <View style={styles.buttonContainer}>
           {editingProductId === product.id ? ( // Mostrar solo el botón de edición si el producto está en modo de edición
             <TouchableOpacity style={styles.button} onPress={() => updateProduct(product.id)}>

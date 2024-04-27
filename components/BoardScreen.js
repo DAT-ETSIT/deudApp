@@ -71,7 +71,10 @@ export default function BoardScreen(props) {
       },
     })
     .then(response => response.json())
-    .then(data => setAmount(data))
+    .then(data => {
+      const parsedData = data.map(item => ({ ...item, count: parseInt(item.count, 10) }));
+      setAmount(parsedData);
+    })
     .catch(error => console.error('Error fetching transactions:', error));
   };
 
@@ -128,7 +131,7 @@ export default function BoardScreen(props) {
       <View style={styles.productInfo}>
         <Text style={styles.productName}>{item.name}</Text>
         <View style={styles.productPriceContainer}>
-          <Text style={styles.productPrice}>{item.price.toFixed(2).replace('.', ',')} €</Text>
+          <Text style={styles.productPrice}>{parseFloat(item?.price).toFixed(2).replace('.', ',')} €</Text>
           <View style={styles.productAmount}>
             <TouchableOpacity onPress={() => handleDecrement(item.id)}>
               <Text style={styles.amountButton}>-</Text>
