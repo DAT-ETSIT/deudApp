@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, View, TextInput, TouchableOpacity, Text, Alert, ImageBackground } from 'react-native';
+import { StyleSheet, View, TextInput, TouchableOpacity, Text, Alert, ImageBackground, BackHandler } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import backgroundImage from '../assets/background.png';
 import backgroundNanoImage from '../assets/background-nano.png';
@@ -216,6 +216,24 @@ export default function DebtsScreen(props) {
       ],
       { cancelable: false }
     );
+  };
+
+  useFocusEffect(
+    React.useCallback(() => {
+      const backHandler = BackHandler.addEventListener(
+        'hardwareBackPress',
+        handleBackPress
+      );
+
+      return () => {
+        backHandler.remove();
+      };
+    }, [])
+  );
+
+  const handleBackPress = () => {
+    props.navigation.goBack(); // Vuelve atrás en la navegación
+    return true; // Indica que el evento de retroceso ha sido manejado
   };
 
   return (

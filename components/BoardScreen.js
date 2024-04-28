@@ -1,18 +1,21 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, View, Text, ImageBackground, TouchableOpacity, FlatList, Image } from 'react-native';
+import { BackHandler, ToastAndroid, StyleSheet, View, Text, ImageBackground, TouchableOpacity, FlatList, Image, RefreshControl } from 'react-native';
 import backgroundImage from '../assets/background.png';
 import { apiurl, useDB, getSessionToken } from '../apiContext';
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect, useRoute } from '@react-navigation/native';
 
 export default function BoardScreen(props) {
+  const route = useRoute();
+  const isHomeScreen = route.name === 'Board'; // Cambia 'Home' por el nombre de la pestaña de inicio
+
   const [products, setProducts] = useState([]);
   const [amount, setAmount] = useState([]);
+  const [refreshing, setRefreshing] = useState(false); // State for RefreshControl
   const userId = props.route.params.name.id;
   const userName = props.route.params.name.name;
   const externalEmail = props.route.params.externalEmail || null;
   const db = useDB();
   const [token, setToken] = useState(null);
-
 
   useEffect(() => {
     const fetchToken = async () => {
@@ -36,6 +39,42 @@ export default function BoardScreen(props) {
       checkLogin();
     }, [])
   );
+
+  useEffect(() => {
+    const handleBackPress = () => {
+      if (isHomeScreen) {
+        if (backPressedOnce) {
+          BackHandler.exitApp();
+          return true;
+        }
+
+        backPressedOnce = true;
+        ToastAndroid.show('Vuelve a pulsar atrás para salir', ToastAndroid.SHORT);
+
+        setTimeout(() => {
+          backPressedOnce = false;
+        }, 2000); // Timeout to reset backPressedOnce after 2 seconds
+
+        return true;
+      }
+      
+      // If not in Home screen, just navigate back
+      props.navigation.goBack();
+      return true;
+    };
+
+    // Adding or removing event listener based on isHomeScreen value
+    const backHandler = BackHandler.addEventListener(
+      'hardwareBackPress',
+      handleBackPress
+    );
+
+    return () => {
+      backHandler.remove(); // Removing event listener on component unmount
+    };
+  }, [isHomeScreen]);
+
+  let backPressedOnce = false;
 
   const checkLogin = async () => {
     db.transaction(tx => {
@@ -75,7 +114,8 @@ export default function BoardScreen(props) {
       const parsedData = data.map(item => ({ ...item, count: parseInt(item.count, 10) }));
       setAmount(parsedData);
     })
-    .catch(error => console.error('Error fetching transactions:', error));
+    .catch(error => console.error('Error fetching transactions:', error))
+    .finally(() => setRefreshing(false)); // Stop refreshing
   };
 
   const handleIncrement = (productId) => {
@@ -148,6 +188,11 @@ export default function BoardScreen(props) {
     </View>
   );
 
+  const onRefresh = () => {
+    setRefreshing(true);
+    fetchData(token);
+  };
+
   return (
     <ImageBackground source={backgroundImage} style={styles.background}>
       <View style={styles.container}>
@@ -157,6 +202,12 @@ export default function BoardScreen(props) {
           renderItem={renderProductItem}
           keyExtractor={(item) => item.id.toString()}
           contentContainerStyle={styles.productList}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+            />
+          }
         />
       </View>
     </ImageBackground>

@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
-import { StyleSheet, View, Text, TextInput, TouchableOpacity, ImageBackground, Alert } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { StyleSheet, View, Text, TextInput, TouchableOpacity, ImageBackground, Alert, BackHandler, ToastAndroid } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import backgroundImage from '../assets/background.png';
 import { apiurl, useDB } from '../apiContext';
+import { useFocusEffect, useRoute } from '@react-navigation/native';
 
 
 export default function LoginFormScreen(props) {
@@ -10,6 +11,45 @@ export default function LoginFormScreen(props) {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const db = useDB();
+
+  const route = useRoute();
+  const isHomeScreen = route.name === 'Login'; // Cambia 'Home' por el nombre de la pestaña de inicio
+
+  useEffect(() => {
+    const handleBackPress = () => {
+      if (isHomeScreen) {
+        if (backPressedOnce) {
+          BackHandler.exitApp();
+          return true;
+        }
+
+        backPressedOnce = true;
+        ToastAndroid.show('Vuelve a pulsar atrás para salir', ToastAndroid.SHORT);
+
+        setTimeout(() => {
+          backPressedOnce = false;
+        }, 2000); // Timeout to reset backPressedOnce after 2 seconds
+
+        return true;
+      }
+      
+      // If not in Home screen, just navigate back
+      props.navigation.goBack();
+      return true;
+    };
+
+    // Adding or removing event listener based on isHomeScreen value
+    const backHandler = BackHandler.addEventListener(
+      'hardwareBackPress',
+      handleBackPress
+    );
+
+    return () => {
+      backHandler.remove(); // Removing event listener on component unmount
+    };
+  }, [isHomeScreen]);
+
+  let backPressedOnce = false;
 
   const handleLogin = async () => {
     try {

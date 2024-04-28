@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { StyleSheet, View, Text, TextInput, TouchableOpacity, ImageBackground, Alert } from 'react-native';
+import { StyleSheet, View, Text, TextInput, TouchableOpacity, ImageBackground, Alert, BackHandler } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import backgroundImage from '../assets/background.png';
 import { apiurl } from '../apiContext';
+import { useFocusEffect } from '@react-navigation/native';
 
 export default function RegisterFormScreen(props) {
   const [name, setName] = useState('');
@@ -52,6 +53,24 @@ export default function RegisterFormScreen(props) {
 
   const handleBack = () => {
     props.navigation.goBack();
+  };
+
+  useFocusEffect(
+    React.useCallback(() => {
+      const backHandler = BackHandler.addEventListener(
+        'hardwareBackPress',
+        handleBackPress
+      );
+
+      return () => {
+        backHandler.remove();
+      };
+    }, [])
+  );
+
+  const handleBackPress = () => {
+    props.navigation.goBack(); // Vuelve atrás en la navegación
+    return true; // Indica que el evento de retroceso ha sido manejado
   };
 
   return (

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, View, TextInput, TouchableOpacity, Text, Alert, ScrollView, ImageBackground } from 'react-native';
+import { StyleSheet, View, TextInput, TouchableOpacity, Text, Alert, ScrollView, ImageBackground, BackHandler } from 'react-native';
 import { apiurl, useDB, getSessionToken } from '../apiContext';
 import backgroundImage from '../assets/background.png';
 import { useFocusEffect } from '@react-navigation/native';
@@ -177,6 +177,24 @@ export default function ManageUserScreen(props) {
         </View>
       </View>
     ));
+  };
+
+  useFocusEffect(
+    React.useCallback(() => {
+      const backHandler = BackHandler.addEventListener(
+        'hardwareBackPress',
+        handleBackPress
+      );
+
+      return () => {
+        backHandler.remove();
+      };
+    }, [])
+  );
+
+  const handleBackPress = () => {
+    props.navigation.goBack(); // Vuelve atrás en la navegación
+    return true; // Indica que el evento de retroceso ha sido manejado
   };
 
   return (
