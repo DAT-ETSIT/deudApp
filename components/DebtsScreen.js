@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, View, TextInput, TouchableOpacity, Text, Alert, ImageBackground, BackHandler } from 'react-native';
+import { StyleSheet, View, TextInput, TouchableOpacity, Text, Alert, ImageBackground, BackHandler, ScrollView, RefreshControl } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import backgroundImage from '../assets/background.png';
 import backgroundNanoImage from '../assets/background-nano.png';
@@ -17,6 +17,7 @@ export default function DebtsScreen(props) {
   const [user, setUser] = useState(null);
   const db = useDB();
   const [token, setToken] = useState(null);
+  const [refreshing, setRefreshing] = useState(false); // Estado para controlar el estado de actualización
 
   useEffect(() => {
     const fetchToken = async () => {
@@ -82,7 +83,8 @@ export default function DebtsScreen(props) {
       const total = filteredData.reduce((acc, curr) => acc + curr.debt, 0);
       setTotalDebt(total);
     })
-    .catch(error => console.error('Error fetching debts:', error));
+    .catch(error => console.error('Error fetching debts:', error))
+    .finally(() => setRefreshing(false)); // Detener la animación de actualización
   };
 
   const handleReset = () => {
@@ -236,6 +238,11 @@ export default function DebtsScreen(props) {
     return true; // Indica que el evento de retroceso ha sido manejado
   };
 
+  const onRefresh = () => {
+    setRefreshing(true); // Inicia la animación de actualización
+    fetchDebts(token); // Llama a la función fetchDebts para actualizar la lista de deudas
+  };
+
   return (
     <TouchableOpacity style={styles.background} onPress={handleBackgroundPress} activeOpacity={1}>
       <ImageBackground source={backgroundImageSource} style={styles.backgroundImage}>
@@ -256,16 +263,26 @@ export default function DebtsScreen(props) {
             </TouchableOpacity>
           </View>
           <Text style={styles.header}>Usuarios y Deudas:</Text>
-          {debtData.map((item, index) => (
-            <View key={index} style={styles.item}>
-              <Text style={styles.userName}>{item.User}</Text>
-              <Text style={styles.debtAmount}>{parseFloat(item?.debt).toFixed(2).replace('.', ',')} €</Text>
+          <ScrollView
+            style={styles.debtList}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={onRefresh}
+              />
+            }
+          >
+            {debtData.map((item, index) => (
+              <View key={index} style={styles.item}>
+                <Text style={styles.userName}>{item.User}</Text>
+                <Text style={styles.debtAmount}>{parseFloat(item?.debt).toFixed(2).replace('.', ',')} €</Text>
+              </View>
+            ))}
+            <View style={styles.item}>
+              <Text style={styles.totalLabel}>Total:</Text>
+              <Text style={styles.totalLabel}>{parseFloat(totalDebt)?.toFixed(2).replace('.', ',')} €</Text>
             </View>
-          ))}
-          <View style={styles.item}>
-            <Text style={styles.totalLabel}>Total:</Text>
-            <Text style={styles.totalLabel}>{parseFloat(totalDebt)?.toFixed(2).replace('.', ',')} €</Text>
-          </View>
+          </ScrollView>
         </View>
         {isNanoBackground && (
           <View style={styles.textContainer}>
@@ -295,7 +312,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     alignItems: 'center',
-    justifyContent: 'top',
+    justifyContent: 'flex-start', // Corregido
     padding: 20,
     width: '85%',
   },
@@ -316,12 +333,16 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     marginTop: 20,
   },
+  debtList: {
+    flex: 1,
+    width: '90%',
+  },
   item: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    width: '80%',
     marginBottom: 5,
+    paddingHorizontal: 10, // Añade un padding horizontal para separar los elementos
   },
   userName: {
     fontSize: 16,

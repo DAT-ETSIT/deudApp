@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, View, TextInput, TouchableOpacity, Text, Alert, ScrollView, ImageBackground, BackHandler } from 'react-native';
+import { StyleSheet, View, TextInput, TouchableOpacity, Text, Alert, ScrollView, ImageBackground, BackHandler, RefreshControl } from 'react-native';
 import { apiurl, useDB, getSessionToken } from '../apiContext';
 import backgroundImage from '../assets/background.png';
 import { useFocusEffect } from '@react-navigation/native';
@@ -12,6 +12,7 @@ export default function ManageUserScreen(props) {
   const [currentId, setCurrentId] = useState(null);
   const [editingId, setEditingId] = useState(null);
   const [user, setUser] = useState(null);
+  const [refreshing, setRefreshing] = useState(false); // Estado para controlar el estado de actualización
   const db = useDB();
   const [token, setToken] = useState(null);
 
@@ -79,6 +80,8 @@ export default function ManageUserScreen(props) {
       setNames(data);
     } catch (error) {
       console.error(error);
+    } finally {
+      setRefreshing(false); // Detener la animación de actualización
     }
   };
 
@@ -197,6 +200,11 @@ export default function ManageUserScreen(props) {
     return true; // Indica que el evento de retroceso ha sido manejado
   };
 
+  const onRefresh = () => {
+    setRefreshing(true); // Inicia la animación de actualización
+    fetchUsers(token); // Llama a la función fetchUsers para actualizar la lista de usuarios
+  };
+
   return (
     <ImageBackground source={backgroundImage} style={styles.background}>
       <View style={styles.container}>
@@ -216,7 +224,15 @@ export default function ManageUserScreen(props) {
             </TouchableOpacity>
           )}
         </View>
-        <ScrollView style={styles.table}>
+        <ScrollView
+          style={styles.table}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+            />
+          }
+        >
           <View style={styles.row}>
             <Text style={styles.masterCell}>Usuarios</Text>
           </View>

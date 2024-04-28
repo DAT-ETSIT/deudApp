@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, View, TextInput, TouchableOpacity, Text, Alert, ScrollView, ImageBackground, BackHandler } from 'react-native';
+import { StyleSheet, View, TextInput, TouchableOpacity, Text, Alert, ScrollView, ImageBackground, BackHandler, RefreshControl } from 'react-native';
 import { apiurl, useDB, getSessionToken } from '../apiContext';
 import backgroundImage from '../assets/background.png';
 import { useFocusEffect } from '@react-navigation/native';
@@ -15,6 +15,7 @@ export default function ManageProductsScreen(props) {
   const [currentProductUrl, setCurrentProductUrl] = useState('');
   const db = useDB();
   const [token, setToken] = useState(null);
+  const [refreshing, setRefreshing] = useState(false); // Estado para controlar el estado de actualización
 
   useEffect(() => {
     const fetchToken = async () => {
@@ -68,9 +69,10 @@ export default function ManageProductsScreen(props) {
       setProducts(data);
     } catch (error) {
       console.error(error);
+    } finally {
+      setRefreshing(false); // Detener la animación de actualización
     }
   };
-  
 
   const addProduct = async () => {
     if (!currentProductName.trim() || !currentProductPrice.trim()) {
@@ -87,20 +89,19 @@ export default function ManageProductsScreen(props) {
         body: JSON.stringify({ name: currentProductName, price: parseFloat(currentProductPrice.replace(',', '.')), photoUrl: currentProductUrl }),
       });
       const responseData = await response.json();
-  
+
       if (!response.ok) {
         throw new Error(responseData.message || 'Failed to add product');
       }
-  
+
       setCurrentProductName('');
       setCurrentProductPrice('');
+      setCurrentProductUrl('');
       fetchProducts(token);
     } catch (error) {
       Alert.alert('Error', error.message || 'Ha ocurrido un error al agregar el producto. Por favor, inténtalo de nuevo.');
     }
   };
-  
-
 
   const tryDeleteProduct = (id, productName) => {
     Alert.alert(
@@ -130,7 +131,6 @@ export default function ManageProductsScreen(props) {
       Alert.alert('Error', error.message || 'Ha ocurrido un error al eliminar el producto. Por favor, inténtalo de nuevo.');
     }
   };
-  
 
   const updateProduct = async (id) => {
     if (!currentProductName.trim() || !currentProductPrice.trim()) {
@@ -152,7 +152,7 @@ export default function ManageProductsScreen(props) {
         },
         body: JSON.stringify({ name: currentProductName, price: parseFloat(currentProductPrice.replace(',', '.')), photoUrl: currentProductUrl }),
       });
-  
+
       if (!response.ok) {
         const responseData = await response.json();
         throw new Error(responseData.message || 'Failed to update product');
@@ -167,7 +167,6 @@ export default function ManageProductsScreen(props) {
       Alert.alert('Error', error.message || 'Ha ocurrido un error al actualizar el producto. Por favor, inténtalo de nuevo.');
     }
   };
-  
 
   const showProducts = () => {
     return products.map((product, index) => (
@@ -210,6 +209,11 @@ export default function ManageProductsScreen(props) {
     return true; // Indica que el evento de retroceso ha sido manejado
   };
 
+  const onRefresh = () => {
+    setRefreshing(true); // Inicia la animación de actualización
+    fetchProducts(token); // Llama a la función fetchProducts para actualizar la lista de productos
+  };
+
   return (
     <ImageBackground source={backgroundImage} style={styles.background}>
       <View style={styles.container}>
@@ -246,7 +250,15 @@ export default function ManageProductsScreen(props) {
             </TouchableOpacity>
           )}
         </View>
-        <ScrollView style={styles.table}>
+        <ScrollView
+          style={styles.table}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+            />
+          }
+        >
           <View style={styles.row}>
             <Text style={styles.masterCell}>Productos</Text>
           </View>
