@@ -80,7 +80,13 @@ export default function DebtsScreen(props) {
     .then(data => {
       const filteredData = data.filter(item => item.User !== null);
       setDebtData(filteredData);
-      const total = filteredData.reduce((acc, curr) => acc + curr.debt, 0);
+      const total = filteredData.reduce((acc, curr) => {
+        if (curr.debt !== null && !isNaN(curr.debt)) {
+          return acc + parseFloat(curr.debt);
+        } else {
+          return acc;
+        }
+      }, 0);
       setTotalDebt(total);
     })
     .catch(error => console.error('Error fetching debts:', error))
